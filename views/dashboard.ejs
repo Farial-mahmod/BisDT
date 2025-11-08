@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bismillah Developers & Traders</title>
+  <link rel="icon" type="image/jpg" href="/bismillah_golden.jpg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Chart.js and DataLabels plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, CornSilk, AliceBlue, HoneyDew);
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin: 20px 0;
+      font-size: 1.8em;
+    }
+
+    /* ===== Top Menu ===== */
+    .top-menu {
+      width: 100%;
+      background: black;
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-wrap: wrap;
+    }
+
+    .top-menu h1 { margin: 0; font-size: 1.5em; }
+    .top-menu a {
+      color: white;
+      margin-left: 20px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1em;
+    }
+    .top-menu a:hover { color: #FFD700; }
+
+    /* ===== Chart + Summary ===== */
+    #chartSummaryContainer {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      margin: 20px auto;
+      width: 80%;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    #chartSummaryContainer canvas {
+      display: block;
+      height: 300px;
+      width: 100%;
+      max-width: 350px;
+    }
+
+    #chartSummaryContainer .summary {
+      font-size: 16px;
+      line-height: 1.8;
+      color: #333;
+      background: white;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    /* ===== Table ===== */
+    .table-container {
+      overflow-x: auto;
+      width: 95%;
+      margin: 20px auto;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    th { background-color: #f2f2f2; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+
+    .status-paid { color: green; font-weight: bold; }
+    .status-pending { color: orange; font-weight: bold; }
+    .status-overdue { color: red; font-weight: bold; }
+
+    .report-icon {
+      cursor: pointer;
+      color: #007bff;
+      font-size: 18px;
+    }
+    .report-icon:hover { color: #0056b3; }
+
+    /* ===== Responsive Rules ===== */
+    @media (max-width: 768px) {
+      h1 { font-size: 1.4em; }
+
+      .top-menu {
+        flex-direction: column;
+        text-align: center;
+        padding: 10px;
+      }
+
+      .top-menu a {
+        display: inline-block;
+        margin: 5px 10px;
+        font-size: 0.95em;
+      }
+
+      #chartSummaryContainer {
+        flex-direction: column;
+        width: 95%;
+        align-items: center;
+      }
+
+      #chartSummaryContainer .summary {
+        width: 100%;
+        font-size: 15px;
+      }
+
+      table { font-size: 13px; }
+      th, td { padding: 8px; }
+    }
+
+    @media (max-width: 480px) {
+      .top-menu a { font-size: 0.9em; }
+      .summary { font-size: 14px; }
+      h1 { font-size: 1.2em; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-menu">
+    <div>
+      <a href="/">Home</a>
+      <a href="/inventory">Inventory</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </div>
+
+  <h1>Admin Dashboard</h1>
+  <div id="chartSummaryContainer">
+    <div>
+      <canvas id="paymentPie"></canvas>
+    </div>
+    <div class="summary">
+      <div><strong>Total Paid:</strong> <%= shareholders.filter(s => s.amount_paid > 0).length %></div>
+      <div><strong>Total Due:</strong> <%= 37 - shareholders.filter(s => s.amount_paid > 0).length %></div>
+      <div><strong>Updated Data:</strong> <%= new Date().toLocaleDateString() %></div>
+    </div>
+  </div>
+
+  <h1>Analytics Details</h1>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Installment Number</th>
+          <th>Amount Paid</th>
+          <th>Payment Status</th>
+          <th>Payment Date</th>
+          <th>Due Date</th>
+          <th>Report</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (shareholders.length === 0) { %>
+          <tr><td colspan="8">No shareholders found</td></tr>
+        <% } else { %>
+          <% shareholders.forEach((s, index) => { %>
+            <tr data-docid="<%= s.doc_id %>" data-id="<%= s.id %>">
+              <td><%= index + 1 %></td>
+              <td><%= s.name %></td>
+              <td><%= s.installment_number %></td>
+              <td><%= s.amount_paid %></td>
+              <td class="<%= s.status === 'paid' ? 'status-paid' : s.status === 'Pending' ? 'status-pending' : 'status-overdue' %>">
+                <%= s.status %>
+              </td>
+              <td><%= s.payment_date %></td>
+              <td><%= s.due_date %></td>
+              <td><span class="report-icon" onclick="viewReport(this)">🧾</span></td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    function viewReport(iconElement) {
+      const row = iconElement.closest('tr');
+      const shareholderId = row.getAttribute('data-id');
+      const docId = row.getAttribute('data-docid');
+
+      if (!shareholderId || shareholderId === "-") {
+        alert("Invalid shareholder ID");
+        return;
+      }
+      window.location.href = `/shareholder?id=${shareholderId}&doc=${docId}`;
+    }
+
+    // Pie Chart
+    const totalShareholders = 37;
+    const paidShareholders = <%= shareholders.filter(s => s.amount_paid > 0).length %>;
+    const dueShareholders = totalShareholders - paidShareholders;
+
+    const ctxPie = document.getElementById('paymentPie').getContext('2d');
+    new Chart(ctxPie, {
+      type: 'pie',
+      data: {
+        labels: ['Paid', 'Due'],
+        datasets: [{
+          data: [paidShareholders, dueShareholders],
+          backgroundColor: ['green', 'red'],
+          borderColor: ['darkgreen', 'darkred'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 12 } } },
+          tooltip: {
+            callbacks: { label: (ctx) => `${ctx.label}: ${ctx.parsed}` }
+          },
+          datalabels: {
+            color: 'white',
+            font: { weight: 'bold', size: 14 },
+            formatter: (v) => v
+          }
+        }
+      },
+      plugins: [ChartDataLabels]
+    });
+  </script>
+</body>
+</html>

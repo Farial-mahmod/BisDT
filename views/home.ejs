@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bismillah Developers & Traders</title>
+    <style>
+        /* Base Styles */
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            color: #fff;
+            background-color: #121212;
+            overflow-x: hidden; 
+        }
+        /* Navbar */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background-color: #1f1f1f;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo img {
+            height: 40px;
+            width: auto;
+            border-radius: 4px;
+        }
+        .logo h1 {
+            font-size: 18px;
+            margin: 0;
+            font-weight: 600;
+        }
+        /* Desktop Navigation Links */
+        .nav-links {
+            display: flex; 
+            gap: 25px;
+        }
+        .nav-links a {
+            text-decoration: none;
+            color: #fff;
+            font-weight: 500;
+            padding: 5px 10px;
+            transition: color 0.3s ease;
+        }
+        .nav-links a:hover {
+            color: #ffd700; 
+        }
+        /* Mobile Menu Button (Hidden on Desktop) */
+        .menu-btn {
+            display: none; 
+            background: none;
+            border: none;
+            font-size: 26px;
+            cursor: pointer;
+            color: #fff;
+        }
+        /* Dropdown Menu (Mobile/Active State) */
+        .menu {
+            display: none;
+            position: absolute; 
+            top: 65px; 
+            right: 25px; 
+            background: #1f1f1f;
+            box-shadow: 0 2px 10px rgba(255,255,255,0.2);
+            border-radius: 8px;
+            overflow: hidden;
+            min-width: 150px;
+            z-index: 900;
+        }
+        .menu.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        .menu a {
+            display: block;
+            padding: 20px 26px;
+            text-decoration: none;
+            color: #fff;
+            font-weight: 500;
+        }
+        .menu a:hover {
+            background: #333;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Hero Section (DESKTOP) */
+        .hero-section {
+            /* --- MODIFICATION 1 (Desktop) --- */
+            /* Removed margin-top, now using padding-top to push content below fixed navbar */
+            padding-top: 80px; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            /* Changed to a simpler min-height to ensure content visibility */
+            min-height: 50vh; 
+            padding-left: 5%;
+            padding-right: 5%;
+            padding-bottom: 40px;
+            gap: 40px;
+        }
+        /* Hero Text */
+        .hero-text {
+            flex: 1;
+            max-width: 45%;
+        }
+        .hero-text h2 {
+            font-size: 42px;
+            margin-bottom: 15px;
+        }
+        .hero-text p {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #ddd;
+        }
+        /* Slider Container */
+        .slider-container {
+            flex: 1;
+            max-width: 50%;
+            height: 400px;
+            min-height: 250px; 
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+        .slide.active {
+            opacity: 1;
+        }
+        /* Image Caption */
+        .caption {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+        .caption.active {
+            opacity: 1;
+        }
+
+        /* Responsive (Mobile) Styles */
+        @media (max-width: 900px) {
+            .nav-links {
+                display: none; 
+            }
+            .menu-btn {
+                display: block; 
+            }
+            .menu {
+                top: 65px; 
+                right: 20px; 
+            }
+            
+            /* Hero Section adjustments */
+            .hero-section {
+                /* --- MODIFICATION 2 (Mobile Stacking) --- */
+                /* This is correct: it stacks items in the order they appear (Text then Slider) */
+                flex-direction: column; 
+                height: auto;
+                min-height: auto; 
+                text-align: center;
+                /* --- MODIFICATION 1 (Mobile) --- */
+                /* Reduced padding-top from 100px to 80px to remove excessive space below navbar */
+                padding: 80px 20px 40px 20px; 
+            }
+
+            .hero-text, .slider-container {
+                max-width: 100%;
+                width: 100%; 
+            }
+          
+            .slider-container {
+                height: 280px; 
+                margin-top: 30px; 
+            }
+
+            .hero-text h2 {
+                font-size: 32px;
+            }
+
+            .hero-text p {
+                font-size: 16px;
+            }
+        }
+
+        /* Footer Styles */
+        .main-footer {
+            background-color: #1f1f1f;
+            color: #ccc;
+            padding: 40px 20px;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.4);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+            gap: 30px;
+        }
+
+        .footer-section {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .footer-section h4 {
+            color: #ffd700;
+            font-size: 18px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
+        }
+
+        .footer-section p, .footer-section address {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .footer-links ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-links a {
+            color: #ccc;
+            text-decoration: none;
+            display: block;
+            padding: 4px 0;
+            transition: color 0.3s ease;
+            font-size: 14px;
+        }
+
+        .footer-links a:hover {
+            color: #ffd700;
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .social-icons a img {
+            width: 30px; 
+            height: 30px;
+            transition: opacity 0.3s ease;
+        }
+
+        .social-icons a img:hover {
+            opacity: 0.7;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            margin-top: 30px;
+            border-top: 1px solid #333;
+            font-size: 13px;
+            color: #888;
+        }
+
+        /* Responsive adjustments for footer */
+        @media (max-width: 768px) {
+            .footer-content {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .footer-section {
+                min-width: 100%;
+                margin-bottom: 20px;
+            }
+            .footer-section h4 {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="navbar">
+        <div class="logo">
+            <img src="bismillah_golden.jpg" alt="Bismillah Developers & Traders" />
+            <h1>Bismillah Developers & Traders</h1>
+        </div>
+
+        <nav class="nav-links">
+            <a href="/login">Login</a>
+            <a href=""></a>
+        </nav>
+        
+        <button class="menu-btn" id="menu-btn">☰</button>
+
+        <div class="menu" id="menu">
+            <a href="/login">Login</a>
+            <a href=""></a>
+        </div>
+    </header>
+
+    <!-- CONTENT SECTION START -->
+    <section class="hero-section">
+        <div class="hero-text">
+            <h2>Find Your Perfect Home</h2>
+            <p>
+                Discover modern apartments designed for comfort and elegance. 
+                We build your dream homes with care, quality and excellence.
+            </p>
+        </div>
+
+        <div class="slider-container" id="sliderContainer">
+            <span class="caption" data-slide-index="0">Bismillah Tower 1</span>
+            <span class="caption" data-slide-index="1">Bismillah Tower 2</span>
+            <img src="t1.jpg" class="slide" data-slide-index="0" alt="Bismillah Tower 1" />
+            <img src="t2.jpg" class="slide" data-slide-index="1" alt="Bismillah Tower 2" />
+        </div>
+    </section>
+    <!-- CONTENT SECTION END -->
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-section footer-about">
+                <h4>Bismillah Developers & Traders</h4>
+                <p>
+                    Leading innovative development since 2020.<br>
+                    Your partner in progress and quality investment.
+                </p>
+                <div class="footer-section footer-contact">
+                    <a href="https://www.facebook.com/p/DIT-Football-Club-100076445800857/" aria-label="Facebook"> <img src="fb.png" alt="Bismillah Developers & Traders Facebook" /></a> 
+                    <a href="https://wa.me/8801611203688" aria-label="WhatsApp"> <img src="wp.png" alt="Bismillah Developers & Traders WhatsApp" /></a> 
+                </div>
+            </div>
+
+            <div class="footer-section footer-links">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="/login">Login</a></li>
+                    <li><a href="">Our Projects</a></li>
+                    <li><a href="#footer">Contact Us</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section footer-contact">
+                <h4>Get In Touch</h4>
+                <address>
+                    Bismillah Tower 1, Holding 20/1, Krishi Bank Road, Boithakhali, Alifnagar<br>
+                    Mobile Number: 01611203688
+                    <br>
+                    Location on Map:
+                    <br>
+                        <div style="position: relative; width: 100%; max-width: 600px; height: 0; padding-bottom: 56.25%; margin: auto;">
+  <iframe 
+    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d29210.303738635826!2d90.39930881083981!3d23.772757799999994!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755c70078fc51b5%3A0x1b15ba50dff1a01c!2sBismillah%20Tower!5e0!3m2!1sen!2sbd!4v1762602935942!5m2!1sen!2sbd" 
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
+    allowfullscreen="" 
+    loading="lazy" 
+    referrerpolicy="no-referrer-when-downgrade">
+  </iframe>
+</div>
+
+</div>
+                </address>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            &copy; 2025 Bismillah Developers & Traders. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        // SLIDER FUNCTIONALITY
+        let slideIndex = 0;
+        const slides = document.querySelectorAll('.slide');
+        const captions = document.querySelectorAll('.caption');
+        function showSlide(index) {
+            slides.forEach(slide => slide.classList.remove('active'));
+            captions.forEach(caption => caption.classList.remove('active'));
+            
+            slides[index].classList.add('active');
+            captions[index].classList.add('active');
+        }
+        function showNextSlide() {
+            slideIndex = (slideIndex + 1) % slides.length;
+            showSlide(slideIndex);
+        }
+        function initSlider() {
+            if (slides.length > 0) {
+                slides.forEach(slide => slide.classList.remove('active'));
+                captions.forEach(caption => caption.classList.remove('active'));
+                slideIndex = 0; 
+                showSlide(slideIndex);
+                setInterval(showNextSlide, 3000);
+            }
+        }
+        // MENU FUNCTIONALITY
+        const menuBtn = document.getElementById('menu-btn');
+        const menu = document.getElementById('menu');
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menu.classList.toggle('active');
+        });
+        window.addEventListener('click', (e) => {
+            if (!menu.contains(e.target) && e.target !== menuBtn) {
+                menu.classList.remove('active');
+            }
+        });
+        window.onload = initSlider;
+    </script>
+</body>
+</html>

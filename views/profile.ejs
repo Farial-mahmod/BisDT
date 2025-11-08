@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bismillah Developers & Traders</title>
+  <link rel="icon" type="image/jpg" href="/bismillah_golden.jpg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: linear-gradient(to right, #fffaf0, #f0f8ff);
+    }
+
+    h1 {
+      color: #333;
+      margin: 15px 10px;
+      font-size: 1.6em;
+    }
+
+    .top-menu {
+      width: 100%;
+      background: linear-gradient(to right, #8B0000, #B22222);
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-wrap: wrap;
+    }
+
+    .top-menu a {
+      color: white;
+      text-decoration: none;
+      margin-left: 20px;
+      font-weight: bold;
+      transition: color 0.3s;
+    }
+    .top-menu a:hover { color: #FFD700; }
+
+    .table-wrapper {
+      overflow-x: auto;
+      width: 95%;
+      margin: 20px auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 14px;
+      min-width: 600px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    tr:nth-child(even) { background-color: #fafafa; }
+
+    input {
+      width: 100%;
+      padding: 4px;
+      box-sizing: border-box;
+    }
+
+    .edit-icon {
+      cursor: pointer;
+      color: blue;
+      font-size: 18px;
+    }
+    .save-icon {
+      cursor: pointer;
+      color: green;
+      font-size: 18px;
+    }
+
+    .custom-alert {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #fff;
+      padding: 25px 30px;
+      border-radius: 10px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      z-index: 1000;
+    }
+
+    .custom-alert-message {
+      font-size: 1.2em;
+      color: #333;
+      margin-bottom: 15px;
+    }
+
+    .backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 1.3em; text-align: center; }
+
+      .top-menu {
+        flex-direction: column;
+        text-align: center;
+        padding: 10px;
+      }
+
+      .top-menu a {
+        display: inline-block;
+        margin: 5px 10px;
+        font-size: 0.95em;
+      }
+
+      table { font-size: 13px; }
+      th, td { padding: 8px; }
+    }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 1.1em; }
+      .top-menu a { font-size: 0.9em; }
+      .edit-icon, .save-icon { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-menu">
+    <div>
+      <a href="/">Home</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </div>
+
+  <center>
+    <h1><%= shareholder.name %></h1>
+
+<div style="padding: 10px; width: 100%; max-width: 300px;">
+  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
+    <b>Total Installments:</b> 
+    <span><%= shareholder.total_installments %></span>
+  </p>
+  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
+    <b>Per Installment Amount:</b> 
+    <span><%= shareholder.installment_amount %></span>
+  </p>
+  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
+    <b>Full Amount:</b> 
+    <span id="totalAmount"></span>
+  </p>
+  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
+    <b>Paid Amount:</b> 
+    <span id="paid"></span>
+  </p>
+  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
+    <b>Outstanding Amount:</b> 
+    <span id="remainingAmount"></span>
+  </p>
+</div>
+
+    <div class="table-wrapper">
+      <table id="paymentTable">
+        <thead>
+          <tr>
+            <th>Installment No.</th>
+            <th>Amount Paid</th>
+            <th>Status</th>
+            <th>Payment Date</th>
+            <th>Due Date</th>
+<% if (shareholder._id === 1) { %><th>Edit</th><% } %>
+          </tr>
+        </thead>
+        <tbody>
+          <% shareholder.payments.forEach(payment => { %>
+            <tr data-installment="<%= payment.installment_number %>">
+              <td><%= payment.installment_number %></td>
+              <td><%= payment.amount_paid %></td>
+              <td><%= payment.status %></td>
+              <td><%= payment.payment_date || "-" %></td>
+              <td><%= payment.last_date %></td>
+<% if (shareholder._id === 1) { %>
+  <td><span class="edit-icon" onclick="enableEdit(this)">✎</span></td>
+<% } else { %>
+<% } %>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </center>
+
+  <div id="myCustomAlert" class="custom-alert">
+    <div class="custom-alert-message">Your response paper has been submitted.</div>
+  </div>
+  <div id="backdrop" class="backdrop"></div>
+
+  <script>
+    const shareholderId = "<%= shareholder._id %>";
+    const perInstallment = parseFloat("<%= shareholder.installment_amount %>");
+    const totalInstallments = 42; // fixed as requested
+
+function calculateTotals() {
+  const rows = document.querySelectorAll("#paymentTable tbody tr");
+  let totalPaid = 0;
+  rows.forEach(row => {
+    const amount = parseFloat(row.cells[1].innerText) || 0;
+    totalPaid += amount;
+  });
+  const total = perInstallment * totalInstallments;
+  const remaining = total - totalPaid;
+
+  // Format numbers with commas
+  document.getElementById("totalAmount").innerText = total.toLocaleString();
+  document.getElementById("paid").innerText = totalPaid.toLocaleString();
+  document.getElementById("remainingAmount").innerText = remaining.toLocaleString();
+}
+
+    function enableEdit(icon) {
+      const row = icon.closest('tr');
+      const cells = row.querySelectorAll('td');
+      for (let i = 1; i <= 3; i++) {
+        const value = cells[i].innerText.trim();
+        cells[i].innerHTML = `<input type="text" value="${value}">`;
+      }
+      icon.outerHTML = `<span class="save-icon" onclick="saveRow(this)">💾</span>`;
+    }
+
+    async function saveRow(icon) {
+      const row = icon.closest('tr');
+      const installmentNumber = row.getAttribute('data-installment');
+      const inputs = row.querySelectorAll('input');
+      const [amountPaid, status, paymentDate] = Array.from(inputs).map(i => i.value.trim());
+      const data = {
+        shareholderId,
+        installmentNumber: parseInt(installmentNumber),
+        amountPaid: parseFloat(amountPaid),
+        paymentDate,
+        status
+      };
+
+      try {
+        const response = await fetch('/update-installment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        await response.text();
+        row.cells[1].innerText = data.amountPaid;
+        row.cells[2].innerText = data.status;
+        row.cells[3].innerText = data.paymentDate;
+        row.cells[5].innerHTML = `<span class="edit-icon" onclick="enableEdit(this)">✎</span>`;
+        calculateTotals();
+        showCustomAlert("Installment data has been updated.");
+      } catch (err) {
+        console.error(err);
+        showCustomAlert("Error saving installment.");
+      }
+    }
+
+    function showCustomAlert(message) {
+      const customAlert = document.getElementById('myCustomAlert');
+      const backdrop = document.getElementById('backdrop');
+      customAlert.querySelector('.custom-alert-message').innerText = message;
+      customAlert.style.display = 'block';
+      backdrop.style.display = 'block';
+      setTimeout(() => {
+        customAlert.style.display = 'none';
+        backdrop.style.display = 'none';
+      }, 3000);
+          window.location.reload();
+    }
+
+    window.onload = calculateTotals;
+  </script>
+</body>
+</html>

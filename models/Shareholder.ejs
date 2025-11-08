@@ -1,0 +1,18 @@
+const mongoose = require('mongoose');
+
+const paymentSchema = new mongoose.Schema({
+  installment_number: Number,
+  amount_paid: Number,
+  payment_date: String,
+  last_date: String,
+  status: String
+});
+
+const shareholderSchema = new mongoose.Schema({
+  name: String,
+  total_installments: Number,
+  installment_amount: Number,
+  payments: [paymentSchema]
+});
+
+module.exports = mongoose.model('Shareholder', shareholderSchema);

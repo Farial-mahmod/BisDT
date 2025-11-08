@@ -1,0 +1,3 @@
+
+const uri = "mongodb+srv://farialmahmodtishan:IMSTEST@web.3j80q.mongodb.net/web?retryWrites=true&w=majority&appName=bismillah";
+
