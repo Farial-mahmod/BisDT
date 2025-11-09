@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login - Bismillah Developers & Traders</title>
+  <title>Bismillah Developer & Traders</title>
+      <link rel="icon" href="https://drive.google.com/thumbnail?id=12-BANR1o6vLWay0ocn7TPkVTDVwYmoEQ&sz=w301-501" type="image/jpg">
   <style>
     body {
       margin: 0;
@@ -13,12 +14,30 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      /* Using min-height and padding-top is better for content that might scroll */
+      min-height: 100vh; 
+      padding-top: 21px; /* Space to clear the fixed navbar */
+    }
+
+    .content-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center; /* Centers children horizontally within the wrapper */
+      padding: 10px;
+      margin-top: 3px; 
+      /* Optional: You can also use margin-bottom for space below the wrapper if needed */
+    }
+    
+    .image-container img {
+        max-width: 120px;
+        height: auto;
+        border-radius: 5%; /* Optional: for a round logo */
+        margin-bottom: 4px; /* Space between the image and the login box */
     }
 
     .login-container {
       background-color: #1f1f1f;
-      padding: 40px 30px;
+      padding: 10px 41px;
       border-radius: 12px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.4);
       width: 100%;
@@ -28,10 +47,12 @@
 
     .login-container h2 {
       text-align: center;
-      margin-bottom: 25px;
+      margin-bottom: 15px;
       font-size: 24px;
       color: #ffd700;
     }
+
+    /* .image-container { text-align: center; } <-- REMOVED, controlled by .content-wrapper */
 
     .form-group {
       margin-bottom: 20px;
@@ -90,7 +111,7 @@
       color: #aaa;
     }
 
-        .navbar {
+    .navbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -104,7 +125,7 @@
       z-index: 1000;
     }
 
-        .logo {
+    .logo {
       display: flex;
       align-items: center;
       gap: 10px;
@@ -198,13 +219,10 @@
     }
   </style>
 </head>
-
 <body>
-
-
   <header class="navbar">
     <div class="logo">
-      <img src="bismillah_golden.jpg" alt="Bismillah Developers & Traders" />
+      <img src="https://drive.google.com/thumbnail?id=12-BANR1o6vLWay0ocn7TPkVTDVwYmoEQ&sz=w1101-1101" alt="Bismillah Developer & Traders" />
     </div>
     <nav class="nav-links">
       <a href="/">Home</a>
@@ -217,25 +235,31 @@
     </div>
   </header>
 
+  <div class="content-wrapper">
+    <div class="image-container">
+      <img src="https://drive.google.com/thumbnail?id=12-BANR1o6vLWay0ocn7TPkVTDVwYmoEQ&sz=w1201-h1201" alt="Bismillah Developer & Traders"/>
+    </div>
 
-  <div class="login-container">
-    <h2>Login</h2>
-    <form id="loginForm" novalidate>
-      <div class="form-group">
-        <label for="mobile">Mobile Number</label>
-        <input type="text" id="mobile" name="mobile" placeholder="01XXXXXXXXX" maxlength="11" required>
-        <div class="error" id="mobileError">Please enter your registered mobile number.</div>
-      </div>
+    <div class="login-container">
+      <!-- <h4>Login</h4> -->
+       <br>
+      <form id="loginForm" novalidate>
+        <div class="form-group">
+          <label for="mobile">Mobile Number</label>
+          <input type="text" id="mobile" name="mobile" placeholder="01XXXXXXXXX" maxlength="11" required>
+          <div class="error" id="mobileError">Please enter your registered mobile number.</div>
+        </div>
 
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" placeholder="Enter your password" required minlength="6">
-        <div class="error" id="passwordError">Password must be at least 6 characters long.</div>
-      </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="Enter your password" required minlength="6">
+          <div class="error" id="passwordError">Password must be at least 6 characters long.</div>
+        </div>
 
-      <button type="submit">Login</button>
-    </form>
-
+        <button type="submit">Login</button>
+        <br><br>
+      </form>
+    </div>
   </div>
 
   <script>
@@ -264,44 +288,38 @@
         valid = false;
       }
 
-// --- Inside the <script> tag in login.ejs ---
+      if (valid) {
+        // Construct the data payload from the form inputs
+        const userData = {
+          mobile: mobileInput.value.trim(),
+          password: passwordInput.value.trim()
+        };
 
-// ... (previous validation code)
-
-if (valid) {
-    // Construct the data payload from the form inputs
-    const userData = {
-        mobile: mobileInput.value.trim(),
-        password: passwordInput.value.trim()
-    };
-
-    fetch('/login', {
-        method: 'POST',
-        headers: {
+        fetch('/login', {
+          method: 'POST',
+          headers: {
             'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData)
-    })
-    .then(response => response.json())
-    .then(data => {
-if (data.success) {
-    const userId = data.user.id;
-    if (userId === 1) {
-        window.location.href = '/dashboard';
-    } else {
-        window.location.href = '/profile';
-    }
-} else {
+          },
+          body: JSON.stringify(userData)
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const userId = data.user.id;
+            if (userId === 1) {
+              window.location.href = '/dashboard';
+            } else {
+              window.location.href = '/profile';
+            }
+          } else {
             alert('Login failed: ' + data.message); 
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert(' Please try again.');
-    });
-}
-      
-
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert(' Please try again.');
+        });
+      }
     });
   </script>
 </body>
