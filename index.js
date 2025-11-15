@@ -41,12 +41,18 @@ app.get('/', (req, res) => {
   res.render('home');
 });
 
+// Existing route - keep this
 app.get('/inventory', ensureLogin, (req, res) => {
   res.render('inventory');
 });
 
-app.post("/purchases", ensureLogin, async (req, res) => {
+// Add this new route for purchase history page
+app.get('/purchase', ensureLogin, (req, res) => {
+  res.render('purchase');
+});
 
+// Updated POST route - changed res.render('inventory') to res.redirect('/purchase')
+app.post("/purchases", ensureLogin, async (req, res) => {
     const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
   try {
@@ -73,18 +79,17 @@ app.post("/purchases", ensureLogin, async (req, res) => {
     };
 
     const result = await collection.insertOne(newEntry);
-res.render('inventory');
-    // res.status(201).json({
-    //   message: "✅ Inventory item added successfully",
-    //   data: newEntry,
-    //   insertedId: result.insertedId
-    // });
+    
+    // CHANGED: Redirect to purchase history page after successful save
+    res.redirect('/purchase');
+    
   } catch (err) {
     console.error("Error inserting document:", err);
     res.status(500).json({ message: "Internal Server Error", error: err.message });
   }
 });
 
+// Keep this route as is - it provides the JSON data for the purchase history table
 app.get("/purchases", ensureLogin, async (req, res) => {
     const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
