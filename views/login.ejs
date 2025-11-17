@@ -263,65 +263,79 @@
     </div>
   </div>
 
-  <script>
-    const form = document.getElementById('loginForm');
-    const mobileInput = document.getElementById('mobile');
-    const passwordInput = document.getElementById('password');
-    const mobileError = document.getElementById('mobileError');
-    const passwordError = document.getElementById('passwordError');
+<script>
+  const form = document.getElementById('loginForm');
+  const mobileInput = document.getElementById('mobile');
+  const passwordInput = document.getElementById('password');
+  const mobileError = document.getElementById('mobileError');
+  const passwordError = document.getElementById('passwordError');
+  const loginBtn = form.querySelector('button[type="submit"]');
 
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
 
-      let valid = true;
-      mobileError.style.display = 'none';
-      passwordError.style.display = 'none';
+    let valid = true;
+    mobileError.style.display = 'none';
+    passwordError.style.display = 'none';
 
-      const mobilePattern = /^01\d{9}$/;
+    const mobilePattern = /^01\d{9}$/;
 
-      if (!mobilePattern.test(mobileInput.value.trim())) {
-        mobileError.style.display = 'block';
-        valid = false;
+    if (!mobilePattern.test(mobileInput.value.trim())) {
+      mobileError.style.display = 'block';
+      valid = false;
+    }
+
+    if (passwordInput.value.trim().length < 6) {
+      passwordError.style.display = 'block';
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    // -------------------------
+    // CHANGE BUTTON TO LOADING
+    // -------------------------
+    loginBtn.disabled = true;
+    loginBtn.textContent = "Loading...";
+
+    const userData = {
+      mobile: mobileInput.value.trim(),
+      password: passwordInput.value.trim()
+    };
+
+    fetch('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+      credentials: 'include'
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        const userId = data.user.id;
+        if (userId === 1) {
+          window.location.href = '/dashboard';
+        } else {
+          window.location.href = '/profile';
+        }
+      } else {
+        alert('Login failed: ' + data.message);
+
+        // Restore button
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Login";
       }
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Please try again.");
 
-      if (passwordInput.value.trim().length < 6) {
-        passwordError.style.display = 'block';
-        valid = false;
-      }
-
-      if (valid) {
-        // Construct the data payload from the form inputs
-        const userData = {
-          mobile: mobileInput.value.trim(),
-          password: passwordInput.value.trim()
-        };
-
-        fetch('/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(userData)
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            const userId = data.user.id;
-            if (userId === 1) {
-              window.location.href = '/dashboard';
-            } else {
-              window.location.href = '/profile';
-            }
-          } else {
-            alert('Login failed: ' + data.message); 
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          alert(' Please try again.');
-        });
-      }
+      // Restore button
+      loginBtn.disabled = false;
+      loginBtn.textContent = "Login";
     });
-  </script>
+  });
+</script>
+
 </body>
 </html>

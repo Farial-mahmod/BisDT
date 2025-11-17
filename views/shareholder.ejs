@@ -145,40 +145,100 @@
       .top-menu a { font-size: 0.9em; }
       .edit-icon, .save-icon { font-size: 16px; }
     }
+
+    /* Dropdown Menu */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-btn {
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1.1em;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: black;
+  min-width: 150px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  padding: 10px 0;
+  z-index: 200;
+}
+
+.dropdown-content a {
+  color: white;
+  padding: 10px 20px;
+  display: block;
+  text-decoration: none;
+}
+
+.dropdown-content a:hover {
+  background: #333;
+  color: #FFD700;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+  .status.paid { 
+    color: green; 
+    font-weight: bold;
+  }
+  .status.due { 
+    color: red; 
+    font-weight: bold;
+  }
+
   </style>
 </head>
 <body>
-  <div class="top-menu">
-    <div>
+
+<div class="top-menu">
+  <div class="dropdown">
+    <span class="dropdown-btn">Category ▾</span>
+    <div class="dropdown-content">
       <a href="/dashboard">Dashboard</a>
+      <a href="/inventory">Goods</a>
+      <a href="/purchase">Purchases</a>
       <a href="/logout">Logout</a>
     </div>
   </div>
+</div>
 
   <center>
     <h1><%= shareholder.name %></h1>
 
 <div style="padding: 10px; width: 100%; max-width: 300px;">
+  
+    <p style="display: flex; justify-content: space-between; margin: 6px 0;">
+    <b>Total Paid:</b> 
+    <span id="paid"></span>
+  </p>
+  
   <p style="display: flex; justify-content: space-between; margin: 6px 0;">
     <b>Total Installments:</b> 
     <span><%= shareholder.total_installments %></span>
   </p>
-  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
+  
+  <!-- <p style="display: flex; justify-content: space-between; margin: 6px 0;">
     <b>Per Installment Amount:</b> 
-    <span><%= shareholder.installment_amount %></span>
-  </p>
+    <span><%= shareholder.installment_amount.toLocaleString("en-US") %></span>
+  </p> -->
+
   <p style="display: flex; justify-content: space-between; margin: 6px 0;">
     <b>Full Amount:</b> 
     <span id="totalAmount"></span>
   </p>
-  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
-    <b>Paid Amount:</b> 
-    <span id="paid"></span>
-  </p>
-  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
+
+  <!-- <p style="display: flex; justify-content: space-between; margin: 6px 0;">
     <b>Outstanding Amount:</b> 
     <span id="remainingAmount"></span>
-  </p>
+  </p> -->
 </div>
 
     <div class="table-wrapper">
@@ -186,6 +246,7 @@
         <thead>
           <tr>
             <th>Installment No.</th>
+             <th>Total Shares</th>
             <th>Amount Paid</th>
             <th>Status</th>
             <th>Payment Date</th>
@@ -195,14 +256,22 @@
         </thead>
         <tbody>
           <% shareholder.payments.forEach(payment => { %>
-            <tr data-installment="<%= payment.installment_number %>">
-              <td><%= payment.installment_number %></td>
-              <td><%= payment.amount_paid %></td>
-              <td><%= payment.status %></td>
-              <td><%= payment.payment_date || "-" %></td>
-              <td><%= payment.last_date %></td>
-              <td><span class="edit-icon" onclick="enableEdit(this)">✎</span></td>
-            </tr>
+<tr data-installment="<%= payment.installment_number %>">
+  <td><%= payment.installment_number %></td>
+
+  <!-- NEW TOTAL SHARES COLUMN -->
+  <td><%= (shareholder.installment_amount / 50000) %></td>
+
+  <td><%= payment.amount_paid.toLocaleString("en-US") %></td>
+  <td class="status <%= payment.status.toLowerCase() %>"><%= payment.status %></td>
+
+  <td><%= payment.payment_date || "" ? new Date(payment.payment_date || "").toLocaleDateString('en-GB') : '' %></td>
+  
+  <td><%= payment.last_date || "" ? new Date(payment.last_date || "").toLocaleDateString('en-GB') : '' %></td>
+  
+  <td><span class="edit-icon" onclick="enableEdit(this)">✎</span></td>
+</tr>
+
           <% }) %>
         </tbody>
       </table>
@@ -223,7 +292,7 @@ function calculateTotals() {
   const rows = document.querySelectorAll("#paymentTable tbody tr");
   let totalPaid = 0;
   rows.forEach(row => {
-    const amount = parseFloat(row.cells[1].innerText) || 0;
+    const amount = parseFloat(row.cells[2].innerText.replace(/,/g, "")) || 0;
     totalPaid += amount;
   });
   const total = perInstallment * totalInstallments;
@@ -235,60 +304,85 @@ function calculateTotals() {
   document.getElementById("remainingAmount").innerText = remaining.toLocaleString();
 }
 
-    function enableEdit(icon) {
-      const row = icon.closest('tr');
-      const cells = row.querySelectorAll('td');
-      for (let i = 1; i <= 3; i++) {
-        const value = cells[i].innerText.trim();
-        cells[i].innerHTML = `<input type="text" value="${value}">`;
-      }
-      icon.outerHTML = `<span class="save-icon" onclick="saveRow(this)">💾</span>`;
-    }
+function enableEdit(icon) {
+  const row = icon.closest('tr');
+  const cells = row.querySelectorAll('td');
 
-    async function saveRow(icon) {
-      const row = icon.closest('tr');
-      const installmentNumber = row.getAttribute('data-installment');
-      const inputs = row.querySelectorAll('input');
-      const [amountPaid, status, paymentDate] = Array.from(inputs).map(i => i.value.trim());
-      const data = {
-        shareholderId,
-        installmentNumber: parseInt(installmentNumber),
-        amountPaid: parseFloat(amountPaid),
-        paymentDate,
-        status
-      };
+  // Only make Amount Paid, Status, Payment Date editable
+  for (let i = 2; i <= 4; i++) {
+    const value = cells[i].innerText.trim();
+    cells[i].innerHTML = `<input type="text" value="${value}">`;
+  }
 
-      try {
-        const response = await fetch('/update-installment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        await response.text();
-        row.cells[1].innerText = data.amountPaid;
-        row.cells[2].innerText = data.status;
-        row.cells[3].innerText = data.paymentDate;
-        row.cells[5].innerHTML = `<span class="edit-icon" onclick="enableEdit(this)">✎</span>`;
-        calculateTotals();
-        showCustomAlert("Installment data has been updated.");
-      } catch (err) {
-        console.error(err);
-        showCustomAlert("Error saving installment.");
-      }
-    }
+  // Change icon to Save button
+  icon.outerHTML = `<span class="save-icon" onclick="saveRow(this)">Save</span>`;
+}
 
-    function showCustomAlert(message) {
-      const customAlert = document.getElementById('myCustomAlert');
-      const backdrop = document.getElementById('backdrop');
-      customAlert.querySelector('.custom-alert-message').innerText = message;
-      customAlert.style.display = 'block';
-      backdrop.style.display = 'block';
-      setTimeout(() => {
-        customAlert.style.display = 'none';
-        backdrop.style.display = 'none';
-      }, 3000);
-          window.location.reload();
-    }
+
+async function saveRow(icon) {
+  const row = icon.closest('tr');
+  const installmentNumber = row.getAttribute('data-installment');
+  const inputs = row.querySelectorAll('input');
+  let [amountPaid, status, paymentDate] = Array.from(inputs).map(i => i.value.trim());
+
+  if (!amountPaid) amountPaid = '0';
+
+  // If status is "due", clear payment date
+  if (status.toLowerCase() === 'due') {
+    paymentDate = "";
+  } else if (paymentDate) {
+    // Validate and format date only if status is not "due"
+    const dateObj = new Date(paymentDate);
+    paymentDate = isNaN(dateObj) ? "" : dateObj.toISOString().split("T")[0];
+  } else {
+    paymentDate = "";
+  }
+
+  const data = {
+    shareholderId,
+    installmentNumber: parseInt(installmentNumber),
+    amountPaid: parseFloat(amountPaid),
+    paymentDate, // will be empty string if status is "due"
+    status
+  };
+
+  try {
+    const response = await fetch('/update-installment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    await response.text();
+
+    // Update row
+    row.cells[2].innerText = parseFloat(amountPaid).toLocaleString();
+    row.cells[3].innerText = status;
+    row.cells[4].innerText = paymentDate; // keep string
+    row.cells[5].innerHTML = `<span class="edit-icon" onclick="enableEdit(this)">✎</span>`;
+
+    calculateTotals();
+    showCustomAlert("✅ Installment updated.");
+  } catch (err) {
+    console.error(err);
+    icon.innerText = "Save";
+    showCustomAlert("✅ Installment updated.");
+  }
+}
+
+function showCustomAlert(message) {
+  const customAlert = document.getElementById('myCustomAlert');
+  const backdrop = document.getElementById('backdrop');
+  customAlert.querySelector('.custom-alert-message').innerText = message;
+  customAlert.style.display = 'block';
+  backdrop.style.display = 'block';
+  setTimeout(() => {
+    customAlert.style.display = 'none';
+    backdrop.style.display = 'none';
+    // Redirect to dashboard instead of reloading
+    window.location.href = "/dashboard";
+  }, 3000);
+}
 
     window.onload = calculateTotals;
   </script>

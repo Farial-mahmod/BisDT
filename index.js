@@ -4,7 +4,27 @@ const { MongoClient } = require("mongodb");
 const app = express();
 const port = 5000;
 const cors = require('cors');
-app.use(cors());
+const session = require("express-session");
+
+app.use(
+  cors({
+    origin: "https://bismillahdeveloperandtraders.com/",
+    credentials: true
+  })
+);
+
+app.use(session({
+  secret: "Bismillah",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false,
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 1000 * 60 * 60 * 24
+  }
+}));
+
 const { ObjectId } = require('mongodb'); 
 // MongoDB Atlas connection
 const uri = "mongodb+srv://farialmahmodtishan:IMSTEST@web.3j80q.mongodb.net/web?retryWrites=true&w=majority&appName=bismillah";
@@ -15,15 +35,6 @@ app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('assets'));
-
-const session = require("express-session");
-app.use(session({
-  secret: "Bismillah",
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false } // true only if using HTTPS
-}));
-
 
 // EJS setup
 app.set("view engine", "ejs");
@@ -192,6 +203,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
+
 app.get("/dashboard", ensureLogin, async (req, res) => {
   const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
   try {
@@ -232,6 +244,7 @@ dashboardData.push({
     await client.close();
   }
 });
+
 
 app.get("/profile", async (req, res) => {
   // 1️⃣ Check if user logged in
@@ -285,62 +298,54 @@ app.post("/update-installment", ensureLogin, async (req, res) => {
     const db = client.db(dbName);
     const collection = db.collection(collectionName);
 
-    // Load full shareholder record
-    const shareholderDoc = await collection.findOne({ "shareholder._id": parseInt(shareholderId) });
-    if (!shareholderDoc || !shareholderDoc.shareholder) {
-      return res.status(404).send("❌ Shareholder not found.");
-    }
+    // Load the document
+    const doc = await collection.findOne({ "shareholder._id": parseInt(shareholderId) });
+    if (!doc) return res.status(404).send("❌ Shareholder not found.");
 
-    const shareholder = shareholderDoc.shareholder.find(s => s._id === parseInt(shareholderId));
-    if (!shareholder) {
-      return res.status(404).send("❌ Shareholder not found.");
-    }
-
-    const payments = shareholder.payments;
-    const perInstallment = parseFloat(shareholder.installment_amount);
-
-    // Find current installment index
-    const index = payments.findIndex(p => p.installment_number === parseInt(installmentNumber));
-    if (index === -1) return res.status(404).send("❌ Installment not found.");
-
-    let remainingAmount = parseFloat(amountPaid);
-    let currentDate = paymentDate || new Date().toISOString().split("T")[0];
-
-    // Loop from this installment forward
-    for (let i = index; i < payments.length && remainingAmount > 0; i++) {
-      const toPay = perInstallment - (parseFloat(payments[i].amount_paid) || 0);
-      const payNow = Math.min(remainingAmount, toPay);
-
-      payments[i].amount_paid = (parseFloat(payments[i].amount_paid) || 0) + payNow;
-      remainingAmount -= payNow;
-
-      if (payments[i].amount_paid >= perInstallment) {
-        payments[i].status = "paid";
-        payments[i].payment_date = currentDate;
-      } else {
-        payments[i].status = "partial";
+    // Find and update the specific shareholder's payments
+    const updated = doc.shareholder.map(shareholder => {
+      if (shareholder._id === parseInt(shareholderId)) {
+        const payments = shareholder.payments.map(payment => {
+          if (payment.installment_number === parseInt(installmentNumber)) {
+            // Set payment_date to blank string if status is "due"
+            const finalPaymentDate = status.toLowerCase() === "due" ? "" : (paymentDate || new Date().toISOString().split("T")[0]);
+            
+            // Update this specific payment
+            return {
+              ...payment,
+              amount_paid: parseFloat(amountPaid),
+              status: status,
+              payment_date: finalPaymentDate
+            };
+          }
+          return payment;
+        });
+        
+        return { ...shareholder, payments };
       }
-    }
+      return shareholder;
+    });
 
-    // Save updated data
-    const result = await collection.updateOne(
-      { "shareholder._id": parseInt(shareholderId) },
-      { $set: { "shareholder.$.payments": payments } }
+    // Replace the entire document
+    const result = await collection.replaceOne(
+      { _id: doc._id },
+      { ...doc, shareholder: updated }
     );
 
     if (result.modifiedCount > 0) {
-      res.send(`✅ Installment ${installmentNumber} updated. Extra amount applied to next installments if applicable.`);
+      res.send(`✅ Installment ${installmentNumber} updated.`);
     } else {
       res.status(400).send("⚠️ No changes made.");
     }
 
   } catch (err) {
-    console.error(err);
+    console.error("Update error:", err);
     res.status(500).send("⚠️ Error updating installment.");
   } finally {
     await client.close();
   }
 });
+
 
 app.get("/logout", (req, res) => {
   req.session.destroy(err => {

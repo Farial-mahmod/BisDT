@@ -19,7 +19,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 12px 20px;
-      background-color: #1f1f1f;
+      background-color: #8B0000;
       box-shadow: 0 2px 6px rgba(0,0,0,0.4);
       position: fixed;
       width: 100%;
@@ -229,52 +229,93 @@
         font-size: 1.2rem; 
       }
     }
+  
+  
+      /* Dropdown Menu */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-btn {
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1.1em;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: black;
+  min-width: 150px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  padding: 10px 0;
+  z-index: 200;
+}
+
+.dropdown-content a {
+  color: white;
+  padding: 10px 20px;
+  display: block;
+  text-decoration: none;
+}
+
+.dropdown-content a:hover {
+  background: #333;
+  color: #FFD700;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+} 
+  
   </style>
 </head>
 <body>
   <header class="navbar">
+
+    <div class="top-menu">
+  <div class="dropdown">
+    <span class="dropdown-btn">Category ▾</span>
+    <div class="dropdown-content">
+      <a href="/">Home</a>
+      <a href="/inventory">Goods</a>
+      <a href="/purchase">Purchases</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </div>
+</div>
+
     <div class="logo">
       <img src="https://drive.google.com/thumbnail?id=12-BANR1o6vLWay0ocn7TPkVTDVwYmoEQ&sz=w1101-1101" alt="Bismillah Developer & Traders" />
-    </div>
-
-    <nav class="nav-links">
-      <a href="/">Home</a>
-      <a href="/dashboard">Dashboard</a>
-      <a href="/inventory">Inventory</a>
-      <a href="/logout">Logout</a>
-    </nav>
-    
-    <button class="menu-btn" id="menu-btn">☰</button>
-
-    <div class="menu" id="menu">
-      <a href="/">Home</a>
-      <a href="/dashboard">Dashboard</a>
-            <a href="/inventory">Inventory</a>
-      <a href="/logout">Logout</a>
     </div>
   </header>
 
   <div class="container">
-    <h1 class="mb-3 text-center">Purchase History</h1>
+    <h1 class="mb-3 text-center">Purchase History</h1> <br><br>
 
     <!-- Table to display purchases -->
     <div class="table-responsive">
-      <table class="table table-bordered table-striped" id="purchasesTable">
-        <thead class="table-dark">
-          <tr>
-            <th>Date</th>
-            <th>Product Name</th>
-            <th>Amount</th>
-            <th>Cost/unit</th>
-            <th>Total</th>
-            <th>Status</th>
-            <th>Supplier</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Rows will be injected here via JS -->
-        </tbody>
-      </table>
+<table class="table table-bordered table-striped" id="purchasesTable">
+  <thead class="table-dark">
+    <tr>
+      <th>Date</th>
+      <th>Product Name</th>
+      <th>Amount</th>
+      <th>Cost/Unit</th>
+       <th>Additional Cost</th>
+      <th>Total Cost</th>
+      <th>Status</th>
+      <th>Supplier</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Rows will be injected here via JS -->
+  </tbody>
+</table>
+
     </div>
   </div>
 
@@ -301,38 +342,45 @@
       loadPurchases();
     });
 
-    async function loadPurchases() {
-      try {
-        const response = await fetch('/purchases');
-        const purchases = await response.json();
 
-        const tbody = document.querySelector('#purchasesTable tbody');
-        tbody.innerHTML = ''; // Clear existing rows
+async function loadPurchases() {
+  const tbody = document.querySelector('#purchasesTable tbody');
+  
+  // Show Loading row
+  tbody.innerHTML = `<tr><td colspan="9" class="text-center"> 🔄 Loading... 🔄</td></tr>`;
+  
+  try {
+    const response = await fetch('/purchases');
+    const purchases = await response.json();
 
-        if (purchases.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" class="text-center">No purchases found.</td></tr>`;
-          return;
-        }
+    tbody.innerHTML = ''; // Clear loading row
 
-        purchases.forEach(p => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${p.date}</td>
-            <td>${p.productName}</td>
-            <td>${p.amount}</td>
-            <td>${p.cost}</td>
-            <td>${p.total}</td>
-            <td>${p.status}</td>
-            <td>${p.supplier}</td>
-          `;
-          tbody.appendChild(row);
-        });
-      } catch (err) {
-        console.error('Error fetching purchases:', err);
-        const tbody = document.querySelector('#purchasesTable tbody');
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load purchases.</td></tr>`;
-      }
+    if (purchases.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center">No purchases found.</td></tr>`;
+      return;
     }
+
+    purchases.forEach(p => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${p.date}</td>
+        <td>${p.productName}</td>
+        <td>${p.amount}</td>
+        <td>${p.cost}</td>
+                <td>${p['additional charges'] || 0}</td>
+        <td>${p.total}</td>
+        <td>${p.status}</td>
+        <td>${p.supplier}</td>
+        <td>${p.note || ''}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  } catch (err) {
+    console.error('Error fetching purchases:', err);
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Failed to load purchases.</td></tr>`;
+  }
+}
+
   </script>
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

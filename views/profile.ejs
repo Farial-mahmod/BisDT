@@ -11,6 +11,7 @@
       font-family: Arial, sans-serif;
       margin: 0;
       background: linear-gradient(to right, #fffaf0, #f0f8ff);
+      padding-top: 70px;
     }
 
     h1 {
@@ -18,30 +19,6 @@
       margin: 15px 10px;
       font-size: 1.6em;
     }
-
-    .top-menu {
-      width: 100%;
-      background: linear-gradient(to right, #8B0000, #B22222);
-      color: white;
-      padding: 15px 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      flex-wrap: wrap;
-    }
-
-    .top-menu a {
-      color: white;
-      text-decoration: none;
-      margin-left: 20px;
-      font-weight: bold;
-      transition: color 0.3s;
-    }
-    .top-menu a:hover { color: #FFD700; }
 
     .table-wrapper {
       overflow-x: auto;
@@ -143,15 +120,102 @@
       .top-menu a { font-size: 0.9em; }
       .edit-icon, .save-icon { font-size: 16px; }
     }
+
+    /* Dropdown Menu */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-btn {
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1.1em;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: black;
+  min-width: 150px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  padding: 10px 0;
+  z-index: 200;
+}
+
+.dropdown-content a {
+  color: white;
+  padding: 10px 20px;
+  display: block;
+  text-decoration: none;
+}
+
+.dropdown-content a:hover {
+  background: #333;
+  color: #FFD700;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background-color: #910404;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo img {
+      height: 40px;
+      width: auto;
+      border-radius: 4px;
+    }
+
+    .logo h1 {
+      font-size: 11px;
+      margin: 0;
+      font-weight: 600;
+    }
+
   </style>
 </head>
 <body>
-  <div class="top-menu">
-    <div>
+
+<header class="navbar">
+
+
+    <div class="dropdown">
+    <span class="dropdown-btn">Category ▾</span>
+    <div class="dropdown-content">
       <a href="/">Home</a>
       <a href="/logout">Logout</a>
     </div>
   </div>
+
+
+  <div class="logo">
+      <img src="https://drive.google.com/thumbnail?id=12-BANR1o6vLWay0ocn7TPkVTDVwYmoEQ&sz=w1101-1101" alt="Bismillah Developer & Traders" />
+  <img src=""><img src=""><img src="">
+  </div>
+
+
+</header>
 
   <center>
     <h1><%= shareholder.name %></h1>
@@ -161,22 +225,27 @@
     <b>Total Installments:</b> 
     <span><%= shareholder.total_installments %></span>
   </p>
-  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
+
+  <!-- <p style="display: flex; justify-content: space-between; margin: 6px 0;">
     <b>Per Installment Amount:</b> 
     <span><%= shareholder.installment_amount %></span>
-  </p>
-  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
+  </p> -->
+
+  <!-- <p style="display: flex; justify-content: space-between; margin: 6px 0;">
     <b>Full Amount:</b> 
     <span id="totalAmount"></span>
-  </p>
+  </p> -->
+
   <p style="display: flex; justify-content: space-between; margin: 6px 0;">
-    <b>Paid Amount:</b> 
+    <b>Total Paid:</b> 
     <span id="paid"></span>
   </p>
-  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
+
+  <!-- <p style="display: flex; justify-content: space-between; margin: 6px 0;">
     <b>Outstanding Amount:</b> 
     <span id="remainingAmount"></span>
-  </p>
+  </p> -->
+
 </div>
 
     <div class="table-wrapper">
@@ -184,6 +253,7 @@
         <thead>
           <tr>
             <th>Installment No.</th>
+            <th>Total Shares</th>
             <th>Amount Paid</th>
             <th>Status</th>
             <th>Payment Date</th>
@@ -192,19 +262,29 @@
           </tr>
         </thead>
         <tbody>
-          <% shareholder.payments.forEach(payment => { %>
-            <tr data-installment="<%= payment.installment_number %>">
-              <td><%= payment.installment_number %></td>
-              <td><%= payment.amount_paid %></td>
-              <td><%= payment.status %></td>
-              <td><%= payment.payment_date || "-" %></td>
-              <td><%= payment.last_date %></td>
-<% if (shareholder._id === 1) { %>
-  <td><span class="edit-icon" onclick="enableEdit(this)">✎</span></td>
-<% } else { %>
-<% } %>
-            </tr>
-          <% }) %>
+<% shareholder.payments.forEach(payment => { %>
+  <tr data-installment="<%= payment.installment_number %>">
+    <td><%= payment.installment_number %></td>
+    <td>
+      <% 
+        let totalShares = 1;
+        if (shareholder._id === 1) totalShares = 5;
+        else if (shareholder._id === 2) totalShares = 3;
+        else if (shareholder._id === 9) totalShares = 2;
+        else if (shareholder._id === 12) totalShares = 2;
+      %>
+      <%= totalShares %>
+    </td>
+    <td><%= payment.amount_paid %></td>
+    <td><%= payment.status %></td>
+    <td><%= payment.payment_date || "-" %></td>
+    <td><%= payment.last_date %></td>
+    <% if (shareholder._id === 1) { %>
+      <td><span class="edit-icon" onclick="enableEdit(this)">✎</span></td>
+    <% } %>
+  </tr>
+<% }) %>
+
         </tbody>
       </table>
     </div>
@@ -224,16 +304,16 @@ function calculateTotals() {
   const rows = document.querySelectorAll("#paymentTable tbody tr");
   let totalPaid = 0;
   rows.forEach(row => {
-    const amount = parseFloat(row.cells[1].innerText) || 0;
+    const amount = parseFloat(row.cells[2].innerText) || 0; // column 2 = Amount Paid
     totalPaid += amount;
   });
-  const total = perInstallment * totalInstallments;
-  const remaining = total - totalPaid;
 
-  // Format numbers with commas
-  document.getElementById("totalAmount").innerText = total.toLocaleString();
   document.getElementById("paid").innerText = totalPaid.toLocaleString();
-  document.getElementById("remainingAmount").innerText = remaining.toLocaleString();
+
+  // Optional: calculate remaining if needed
+  // const totalInstallments = 42;
+  // const remaining = (perInstallment * totalInstallments) - totalPaid;
+  // document.getElementById("remainingAmount").innerText = remaining.toLocaleString();
 }
 
     function enableEdit(icon) {

@@ -152,18 +152,61 @@
       .summary { font-size: 14px; }
       h1 { font-size: 1.2em; }
     }
+
+    /* Dropdown Menu */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-btn {
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1.1em;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: black;
+  min-width: 150px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  padding: 10px 0;
+  z-index: 200;
+}
+
+.dropdown-content a {
+  color: white;
+  padding: 10px 20px;
+  display: block;
+  text-decoration: none;
+}
+
+.dropdown-content a:hover {
+  background: #333;
+  color: #FFD700;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
   </style>
 </head>
 <body>
 
-  <div class="top-menu">
-    <div>
+<div class="top-menu">
+  <div class="dropdown">
+    <span class="dropdown-btn">Category ▾</span>
+    <div class="dropdown-content">
       <a href="/">Home</a>
-      <a href="/inventory">Inventory</a>
-            <a href="/purchase">Purchases</a>
+      <a href="/inventory">Goods</a>
+      <a href="/purchase">Purchases</a>
       <a href="/logout">Logout</a>
     </div>
   </div>
+</div>
 
   <h1>Admin Dashboard</h1>
   <div id="chartSummaryContainer">
@@ -171,14 +214,13 @@
       <canvas id="paymentPie"></canvas>
     </div>
     <div class="summary">
-      <div><strong>Total Paid:</strong> <%= shareholders.filter(s => s.amount_paid > 0).length %></div>
-      <div><strong>Total Due:</strong> <%= 37 - shareholders.filter(s => s.amount_paid > 0).length %></div>
-      <div><strong>Updated Data:</strong> <%= new Date().toLocaleDateString() %></div>
+      <div><strong>Total Collection:</strong> <%= shareholders.reduce((sum, s) => sum + (s.amount_paid || 0), 0).toLocaleString("en-US") %></div>
+      <div><strong>Total Payers:</strong> <%= shareholders.filter(s => s.amount_paid > 0).length %></div>
+      <div><strong>Total Defaulters:</strong> <%= 37 - shareholders.filter(s => s.amount_paid > 0).length %></div>
+      <div><strong>Updated Date:</strong> <%= new Date().toLocaleDateString('en-GB') %></div>
     </div>
   </div>
-
   <h1>Analytics Details</h1>
-
   <div class="table-container">
     <table>
       <thead>
@@ -186,6 +228,7 @@
           <th>ID</th>
           <th>Name</th>
           <th>Installment No.</th>
+          <th>Total Shares</th>  
           <th>Paid Amount</th>
           <th>Payment Status</th>
           <th>Payment Date</th>
@@ -193,23 +236,36 @@
           <th>Edit Report</th>
         </tr>
       </thead>
+      <%
+  const shareMap = {
+    1: 5,
+    2: 3,
+    9: 2,
+    12: 2
+  };
+%>
+
       <tbody>
         <% if (shareholders.length === 0) { %>
           <tr><td colspan="8">No shareholders found</td></tr>
         <% } else { %>
           <% shareholders.forEach((s, index) => { %>
             <tr data-docid="<%= s.doc_id %>" data-id="<%= s.id %>">
-              <td><%= index + 1 %></td>
-              <td><%= s.name %></td>
-              <td><%= s.installment_number %></td>
-              <td><%= s.amount_paid %></td>
-              <td class="<%= s.status === 'paid' ? 'status-paid' : s.status === 'Pending' ? 'status-pending' : 'status-overdue' %>">
-                <%= s.status %>
-              </td>
-              <td><%= s.payment_date %></td>
-              <td><%= s.due_date %></td>
-              <td><span class="report-icon" onclick="viewReport(this)">🧾</span></td>
-            </tr>
+  <td><%= index + 1 %></td>
+  <td><%= s.name %></td>
+  <td><%= s.installment_number %></td>
+
+  <td><%= shareMap[index + 1] || 1 %></td>
+
+<td><%= Number(s.amount_paid).toLocaleString("en-US") %></td>
+
+  <td class="<%= s.status === 'paid' ? 'status-paid' : s.status === 'Pending' ? 'status-pending' : 'status-overdue' %>">
+    <%= s.status %>
+  </td>
+  <td><%= s.payment_date %></td>
+<td><%= s.due_date ? new Date(s.due_date).toLocaleDateString('en-GB') : '' %></td>
+  <td><span class="report-icon" onclick="viewReport(this)">🧾</span></td>
+</tr>
           <% }) %>
         <% } %>
       </tbody>
