@@ -185,14 +185,38 @@
   display: block;
 }
 
-  .status.paid { 
-    color: green; 
-    font-weight: bold;
-  }
-  .status.due { 
-    color: red; 
-    font-weight: bold;
-  }
+.card-container {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin: 20px auto;
+  max-width: 900px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: center;
+  width: 200px;
+}
+
+.card h3 {
+  margin-bottom: 10px;
+  font-size: 1em;
+  color: #555;
+}
+
+.card p {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: 0;
+}
+
+.status.paid { color: green; font-weight: bold; }
+.status.due { color: red; font-weight: bold; }
 
   </style>
 </head>
@@ -211,34 +235,28 @@
 </div>
 
   <center>
-    <h1><%= shareholder.name %></h1>
 
-<div style="padding: 10px; width: 100%; max-width: 300px;">
-  
-    <p style="display: flex; justify-content: space-between; margin: 6px 0;">
-    <b>Total Paid:</b> 
-    <span id="paid"></span>
-  </p>
-  
-  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
-    <b>Total Installments:</b> 
-    <span><%= shareholder.total_installments %></span>
-  </p>
-  
-  <!-- <p style="display: flex; justify-content: space-between; margin: 6px 0;">
-    <b>Per Installment Amount:</b> 
-    <span><%= shareholder.installment_amount.toLocaleString("en-US") %></span>
-  </p> -->
+<div class="card-container">
+  <div class="card">
+    <h3>Name</h3>
+    <p><%= shareholder.name %></p>
+  </div>
+  <div class="card">
+    <h3>Total Paid (BDT)</h3>
+    <p id="paid"></p>
+  </div>
+  <div class="card">
+    <h3>Total Installments</h3>
+    <p> 45 </p>
+    <!-- <p><%= shareholder.total_installments %></p> -->
+  </div>
 
-  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
-    <b>Full Amount:</b> 
-    <span id="totalAmount"></span>
-  </p>
+  <!-- <div class="card">
+    <h3>Full Amount</h3>
+    <p id="totalAmount"></p>
+  </div> -->
 
-  <!-- <p style="display: flex; justify-content: space-between; margin: 6px 0;">
-    <b>Outstanding Amount:</b> 
-    <span id="remainingAmount"></span>
-  </p> -->
+</div>
 </div>
 
     <div class="table-wrapper">
@@ -295,14 +313,16 @@ function calculateTotals() {
     const amount = parseFloat(row.cells[2].innerText.replace(/,/g, "")) || 0;
     totalPaid += amount;
   });
-  const total = perInstallment * totalInstallments;
-  const remaining = total - totalPaid;
 
-  // Format numbers with commas
-  document.getElementById("totalAmount").innerText = total.toLocaleString();
+  const totalInstallments = <%= shareholder.total_installments %>;
+  const perInstallment = parseFloat("<%= shareholder.installment_amount %>");
+  const totalAmount = perInstallment * totalInstallments;
+
   document.getElementById("paid").innerText = totalPaid.toLocaleString();
-  document.getElementById("remainingAmount").innerText = remaining.toLocaleString();
+  document.getElementById("totalAmount").innerText = totalAmount.toLocaleString();
 }
+window.onload = calculateTotals;
+
 
 function enableEdit(icon) {
   const row = icon.closest('tr');
@@ -318,8 +338,11 @@ function enableEdit(icon) {
   icon.outerHTML = `<span class="save-icon" onclick="saveRow(this)">Save</span>`;
 }
 
-
 async function saveRow(icon) {
+  // Show saving state immediately
+  icon.textContent = 'Saving…';
+  icon.style.pointerEvents = 'none'; // prevent multiple clicks
+
   const row = icon.closest('tr');
   const installmentNumber = row.getAttribute('data-installment');
   const inputs = row.querySelectorAll('input');
@@ -342,7 +365,7 @@ async function saveRow(icon) {
     shareholderId,
     installmentNumber: parseInt(installmentNumber),
     amountPaid: parseFloat(amountPaid),
-    paymentDate, // will be empty string if status is "due"
+    paymentDate,
     status
   };
 
@@ -355,20 +378,23 @@ async function saveRow(icon) {
 
     await response.text();
 
-    // Update row
+    // Update row with new values
     row.cells[2].innerText = parseFloat(amountPaid).toLocaleString();
     row.cells[3].innerText = status;
-    row.cells[4].innerText = paymentDate; // keep string
+    row.cells[4].innerText = paymentDate; 
     row.cells[5].innerHTML = `<span class="edit-icon" onclick="enableEdit(this)">✎</span>`;
 
     calculateTotals();
-    showCustomAlert("✅ Installment updated.");
+    showCustomAlert("✅ Data updated.");
   } catch (err) {
     console.error(err);
-    icon.innerText = "Save";
-    showCustomAlert("✅ Installment updated.");
+    icon.textContent = 'Save'; // revert if error
+    icon.style.pointerEvents = 'auto';
+    showCustomAlert("✅ Data updated.");
   }
 }
+
+///
 
 function showCustomAlert(message) {
   const customAlert = document.getElementById('myCustomAlert');

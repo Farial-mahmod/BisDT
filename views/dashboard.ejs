@@ -272,18 +272,26 @@
     </table>
   </div>
 
-  <script>
-    function viewReport(iconElement) {
-      const row = iconElement.closest('tr');
-      const shareholderId = row.getAttribute('data-id');
-      const docId = row.getAttribute('data-docid');
+<script>
+function viewReport(iconElement) {
+  const row = iconElement.closest('tr');
+  const shareholderId = row.getAttribute('data-id');
+  const docId = row.getAttribute('data-docid');
 
-      if (!shareholderId || shareholderId === "-") {
-        alert("Invalid shareholder ID");
-        return;
-      }
-      window.location.href = `/shareholder?id=${shareholderId}&doc=${docId}`;
-    }
+  if (!shareholderId || shareholderId === "-") {
+    alert("Invalid shareholder ID");
+    return;
+  }
+
+  // Change icon to Loading...
+  iconElement.textContent = 'Loading…';
+  iconElement.style.pointerEvents = 'none'; // prevent multiple clicks
+
+  // Small delay to show the loading text before redirect
+  setTimeout(() => {
+    window.location.href = `/shareholder?id=${shareholderId}&doc=${docId}`;
+  }, 150); // 150ms is enough
+}
 
     // Pie Chart
     const totalShareholders = 37;

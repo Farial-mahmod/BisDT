@@ -193,13 +193,45 @@
       font-weight: 600;
     }
 
+.card-container {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin: 20px auto;
+  max-width: 900px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: center;
+  width: 200px;
+}
+
+.card h3 {
+  margin-bottom: 10px;
+  font-size: 1em;
+  color: #555;
+}
+
+.card p {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: 0;
+}
+
+/* Status Colors in Table */
+.status.paid { color: green; font-weight: bold; }
+.status.due { color: red; font-weight: bold; }
+  
   </style>
 </head>
 <body>
 
 <header class="navbar">
-
-
     <div class="dropdown">
     <span class="dropdown-btn">Category ▾</span>
     <div class="dropdown-content">
@@ -208,45 +240,32 @@
     </div>
   </div>
 
-
   <div class="logo">
       <img src="https://drive.google.com/thumbnail?id=12-BANR1o6vLWay0ocn7TPkVTDVwYmoEQ&sz=w1101-1101" alt="Bismillah Developer & Traders" />
   <img src=""><img src=""><img src="">
   </div>
 
-
 </header>
 
   <center>
-    <h1><%= shareholder.name %></h1>
 
-<div style="padding: 10px; width: 100%; max-width: 300px;">
-  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
-    <b>Total Installments:</b> 
-    <span><%= shareholder.total_installments %></span>
-  </p>
-
-  <!-- <p style="display: flex; justify-content: space-between; margin: 6px 0;">
-    <b>Per Installment Amount:</b> 
-    <span><%= shareholder.installment_amount %></span>
-  </p> -->
-
-  <!-- <p style="display: flex; justify-content: space-between; margin: 6px 0;">
-    <b>Full Amount:</b> 
-    <span id="totalAmount"></span>
-  </p> -->
-
-  <p style="display: flex; justify-content: space-between; margin: 6px 0;">
-    <b>Total Paid:</b> 
-    <span id="paid"></span>
-  </p>
-
-  <!-- <p style="display: flex; justify-content: space-between; margin: 6px 0;">
-    <b>Outstanding Amount:</b> 
-    <span id="remainingAmount"></span>
-  </p> -->
-
-</div>
+<div class="card-container">
+  <div class="card">
+    <h3>Name</h3>
+    <p><%= shareholder.name %></p>
+  </div>
+  <div class="card">
+    <h3>Total Installments</h3>
+    <p>45</p>
+  </div>
+  <div class="card">
+    <h3>Total Paid (BDT)</h3>
+    <p id="paid"></p>
+  </div>
+  <!-- <div class="card">
+    <h3>Outstanding</h3>
+    <p id="remainingAmount"></p>
+  </div> -->
 
     <div class="table-wrapper">
       <table id="paymentTable">
@@ -304,16 +323,24 @@ function calculateTotals() {
   const rows = document.querySelectorAll("#paymentTable tbody tr");
   let totalPaid = 0;
   rows.forEach(row => {
-    const amount = parseFloat(row.cells[2].innerText) || 0; // column 2 = Amount Paid
+    const amount = parseFloat(row.cells[2].innerText.replace(/,/g,'')) || 0;
     totalPaid += amount;
+
+    // Color status column
+    const statusCell = row.cells[3];
+    if (statusCell.innerText.toLowerCase() === 'paid') {
+      statusCell.className = 'status paid';
+    } else if (statusCell.innerText.toLowerCase() === 'due') {
+      statusCell.className = 'status due';
+    }
   });
 
   document.getElementById("paid").innerText = totalPaid.toLocaleString();
 
-  // Optional: calculate remaining if needed
-  // const totalInstallments = 42;
-  // const remaining = (perInstallment * totalInstallments) - totalPaid;
-  // document.getElementById("remainingAmount").innerText = remaining.toLocaleString();
+  const totalInstallments = 45; // example
+  const perInstallment = parseFloat("<%= shareholder.installment_amount %>");
+  const remaining = (perInstallment * totalInstallments) - totalPaid;
+  document.getElementById("remainingAmount").innerText = remaining.toLocaleString();
 }
 
     function enableEdit(icon) {
