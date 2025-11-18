@@ -245,30 +245,44 @@
   };
 %>
 
-      <tbody>
-        <% if (shareholders.length === 0) { %>
-          <tr><td colspan="8">No shareholders found</td></tr>
-        <% } else { %>
-          <% shareholders.forEach((s, index) => { %>
-            <tr data-docid="<%= s.doc_id %>" data-id="<%= s.id %>">
-  <td><%= index + 1 %></td>
-  <td><%= s.name %></td>
-  <td><%= s.installment_number %></td>
+<tbody>
+  <% if (shareholders.length === 0) { %>
+    <tr><td colspan="8">No shareholders found</td></tr>
+  <% } else { %>
+    <% shareholders.forEach((s, index) => { %>
+      <tr data-docid="<%= s.doc_id %>" data-id="<%= s.id %>">
+        <td><%= index + 1 %></td>
+        <td><%= s.name %></td>
+        <td><%= s.installment_number %></td>
+        <td><%= shareMap[index + 1] || 1 %></td>
+        <td><%= Number(s.amount_paid).toLocaleString("en-US") %></td>
+        <td class="<%= s.status === 'paid' ? 'status-paid' : s.status === 'Pending' ? 'status-pending' : 'status-overdue' %>">
+          <%= s.status %>
+        </td>
+<td>
+  <% 
+    if (s.payment_date) {
+      const date = new Date(s.payment_date);
+      if (!isNaN(date.getTime())) {
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = String(date.getFullYear());
+  %>
+    <%= `${day}-${month}-${year}` %>
+  <%   } else { %>
+    &nbsp;
+  <%   } %>
+  <% } else { %>
+    &nbsp;
+  <% } %>
+</td>
+        <td><%= s.due_date ? new Date(s.due_date).toLocaleDateString('en-GB').split('/').join('-') : '' %></td>
+        <td><span class="report-icon" onclick="viewReport(this)">🧾</span></td>
+      </tr>
+    <% }) %>
+  <% } %>
+</tbody>
 
-  <td><%= shareMap[index + 1] || 1 %></td>
-
-<td><%= Number(s.amount_paid).toLocaleString("en-US") %></td>
-
-  <td class="<%= s.status === 'paid' ? 'status-paid' : s.status === 'Pending' ? 'status-pending' : 'status-overdue' %>">
-    <%= s.status %>
-  </td>
-  <td><%= s.payment_date %></td>
-<td><%= s.due_date ? new Date(s.due_date).toLocaleDateString('en-GB') : '' %></td>
-  <td><span class="report-icon" onclick="viewReport(this)">🧾</span></td>
-</tr>
-          <% }) %>
-        <% } %>
-      </tbody>
     </table>
   </div>
 
