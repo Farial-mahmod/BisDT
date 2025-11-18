@@ -281,6 +281,7 @@
           </tr>
         </thead>
         <tbody>
+
 <% shareholder.payments.forEach(payment => { %>
   <tr data-installment="<%= payment.installment_number %>">
     <td><%= payment.installment_number %></td>
@@ -297,7 +298,9 @@
     <td><%= payment.amount_paid %></td>
     <td><%= payment.status %></td>
     <td><%= payment.payment_date || "-" %></td>
-    <td><%= payment.last_date %></td>
+    <td>
+      <%= payment.last_date ? payment.last_date.split('-').reverse().join('-') : '-' %>
+    </td>
     <% if (shareholder._id === 1) { %>
       <td><span class="edit-icon" onclick="enableEdit(this)">✎</span></td>
     <% } %>

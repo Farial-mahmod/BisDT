@@ -1,41 +1,45 @@
 const express = require("express");
 const { MongoClient } = require("mongodb");
-// require("dotenv").config();
+require("dotenv").config();
+const uri = process.env.MONGODB_URI || "mongodb+srv://farialmahmodtishan:IMSTEST@web.3j80q.mongodb.net/web?retryWrites=true&w=majority&appName=bismillah";
 const app = express();
 const port = 5000;
 const cors = require('cors');
 const session = require("express-session");
+const MongoStore = require("connect-mongo");
+const { ObjectId } = require('mongodb'); 
+const dbName = "bismillah";
+const collectionName = "shareholders";
 
-app.use(
-  cors({
-    origin: "https://bismillahdeveloperandtraders.com/",
-    credentials: true
-  })
-);
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? "https://bismillahdeveloperandtraders.com" 
+    : ["http://localhost:5000", "http://127.0.0.1:3000"],
+  credentials: true
+}));
 
 app.use(session({
   secret: "Bismillah",
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: uri,
+    dbName: "bismillah",
+    collectionName: "sessions",
+    ttl: 60 * 60 * 24
+  }),
   cookie: {
-    secure: false,
+    secure: process.env.NODE_ENV === 'production', // Only true in production
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: process.env.NODE_ENV === 'production' ? "none" : "lax",
     maxAge: 1000 * 60 * 60 * 24
   }
 }));
-
-const { ObjectId } = require('mongodb'); 
-// MongoDB Atlas connection
-const uri = "mongodb+srv://farialmahmodtishan:IMSTEST@web.3j80q.mongodb.net/web?retryWrites=true&w=majority&appName=bismillah";
-const dbName = "bismillah";
-const collectionName = "shareholders";
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('assets'));
-
 // EJS setup
 app.set("view engine", "ejs");
 app.set("views", "./views");
@@ -65,14 +69,11 @@ app.get('/purchase', ensureLogin, (req, res) => {
 // Updated POST route - changed res.render('inventory') to res.redirect('/purchase')
 app.post("/purchases", ensureLogin, async (req, res) => {
     const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-
   try {
     const db = client.db("bismillah");
     const collection = db.collection("inventory");
-
     // Destructure and clean input data
     const { date, productName, amount, cost, total, status, supplier } = req.body;
-
     // Validate required fields
     if (!date || !productName || !amount || !cost || !status || !supplier) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -88,12 +89,9 @@ app.post("/purchases", ensureLogin, async (req, res) => {
       supplier,
       createdAt: new Date()
     };
-
     const result = await collection.insertOne(newEntry);
-    
     // CHANGED: Redirect to purchase history page after successful save
     res.redirect('/purchase');
-    
   } catch (err) {
     console.error("Error inserting document:", err);
     res.status(500).json({ message: "Internal Server Error", error: err.message });
@@ -103,7 +101,6 @@ app.post("/purchases", ensureLogin, async (req, res) => {
 // Keep this route as is - it provides the JSON data for the purchase history table
 app.get("/purchases", ensureLogin, async (req, res) => {
     const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-
   try {
     const db = client.db("bismillah");
     const collection = db.collection("inventory");
@@ -203,7 +200,6 @@ app.post("/login", async (req, res) => {
   }
 });
 
-
 app.get("/dashboard", ensureLogin, async (req, res) => {
   const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
   try {
@@ -244,7 +240,6 @@ dashboardData.push({
     await client.close();
   }
 });
-
 
 app.get("/profile", async (req, res) => {
   // 1️⃣ Check if user logged in
@@ -288,11 +283,10 @@ app.get("/profile", async (req, res) => {
   }
 });
 
-
 app.post("/update-installment", ensureLogin, async (req, res) => {
   const { shareholderId, installmentNumber, amountPaid, paymentDate, status } = req.body;
   const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-
+  
   try {
     await client.connect();
     const db = client.db(dbName);
@@ -302,38 +296,86 @@ app.post("/update-installment", ensureLogin, async (req, res) => {
     const doc = await collection.findOne({ "shareholder._id": parseInt(shareholderId) });
     if (!doc) return res.status(404).send("❌ Shareholder not found.");
 
-    // Find and update the specific shareholder's payments
+    // Find the specific shareholder
+    const shareholder = doc.shareholder.find(sh => sh._id === parseInt(shareholderId));
+    if (!shareholder) return res.status(404).send("❌ Shareholder not found.");
+
+    const installmentAmount = shareholder.installment_amount;
+    const maxAmountPerInstallment = (shareholder.installment_amount / 50000) * 50000; // Total Shares * 50000
+    
+    let excessAmount = 0;
+    let currentInstallmentPaid = parseFloat(amountPaid);
+
+    // Check if amount paid exceeds the maximum allowed
+    if (currentInstallmentPaid > maxAmountPerInstallment) {
+      excessAmount = currentInstallmentPaid - maxAmountPerInstallment;
+      currentInstallmentPaid = maxAmountPerInstallment;
+    }
+
+    // Update the specific shareholder's payments
     const updated = doc.shareholder.map(shareholder => {
       if (shareholder._id === parseInt(shareholderId)) {
-        const payments = shareholder.payments.map(payment => {
+        let payments = [...shareholder.payments]; // Create a copy
+        
+        // Update current installment
+        payments = payments.map(payment => {
           if (payment.installment_number === parseInt(installmentNumber)) {
-            // Set payment_date to blank string if status is "due"
-            const finalPaymentDate = status.toLowerCase() === "due" ? "" : (paymentDate || new Date().toISOString().split("T")[0]);
+            // Handle payment date based on status
+            let finalPaymentDate = "";
             
-            // Update this specific payment
+            if (status.toLowerCase() === "paid" && paymentDate) {
+              finalPaymentDate = paymentDate;
+            }
+
             return {
               ...payment,
-              amount_paid: parseFloat(amountPaid),
+              amount_paid: currentInstallmentPaid,
               status: status,
               payment_date: finalPaymentDate
             };
           }
           return payment;
         });
+
+        // If there's excess amount, apply it to the next installment
+        if (excessAmount > 0) {
+          const nextInstallmentNumber = parseInt(installmentNumber) + 1;
+          const nextInstallment = payments.find(p => p.installment_number === nextInstallmentNumber);
+          
+          if (nextInstallment) {
+            payments = payments.map(payment => {
+              if (payment.installment_number === nextInstallmentNumber) {
+                const newAmount = payment.amount_paid + excessAmount;
+                
+                // If the next installment also exceeds max, we'll handle it recursively in future updates
+                return {
+                  ...payment,
+                  amount_paid: newAmount,
+                  status: status, // Same status as current installment
+                  payment_date: paymentDate // Same date as current installment
+                };
+              }
+              return payment;
+            });
+          }
+        }
         
         return { ...shareholder, payments };
       }
       return shareholder;
     });
 
-    // Replace the entire document
     const result = await collection.replaceOne(
       { _id: doc._id },
       { ...doc, shareholder: updated }
     );
 
     if (result.modifiedCount > 0) {
-      res.send(`✅ Installment ${installmentNumber} updated.`);
+      let message = `✅ Installment ${installmentNumber} updated.`;
+      if (excessAmount > 0) {
+        message += ` Excess amount of ${excessAmount.toLocaleString()} BDT applied to next installment.`;
+      }
+      res.send(message);
     } else {
       res.status(400).send("⚠️ No changes made.");
     }
@@ -346,14 +388,12 @@ app.post("/update-installment", ensureLogin, async (req, res) => {
   }
 });
 
-
 app.get("/logout", (req, res) => {
   req.session.destroy(err => {
     if (err) return res.send("Error logging out");
     res.redirect("/login");
   });
 });
-
 
 app.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);

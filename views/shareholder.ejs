@@ -218,6 +218,32 @@
 .status.paid { color: green; font-weight: bold; }
 .status.due { color: red; font-weight: bold; }
 
+select {
+  width: 100%;
+  padding: 4px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+input[type="date"] {
+  width: 100%;
+  padding: 4px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-family: Arial, sans-serif;
+}
+
+input[type="number"] {
+  width: 100%;
+  padding: 4px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  text-align: center;
+}
+
   </style>
 </head>
 <body>
@@ -330,8 +356,74 @@ function enableEdit(icon) {
 
   // Only make Amount Paid, Status, Payment Date editable
   for (let i = 2; i <= 4; i++) {
-    const value = cells[i].innerText.trim();
-    cells[i].innerHTML = `<input type="text" value="${value}">`;
+    const cell = cells[i];
+    
+    if (i === 4) { // Payment Date column - convert display format to input format
+      const displayDate = cell.innerText.trim();
+      let inputValue = "";
+      
+      if (displayDate) {
+        // Convert DD/MM/YYYY to YYYY-MM-DD for input[type="date"]
+        const parts = displayDate.split('/');
+        if (parts.length === 3) {
+          inputValue = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+      }
+      
+      cell.innerHTML = `<input type="date" value="${inputValue}">`;
+    } else if (i === 3) { // Status column - use dropdown
+      const currentStatus = cell.innerText.trim().toLowerCase();
+      cell.innerHTML = `
+        <select>
+          <option value="paid" ${currentStatus === 'paid' ? 'selected' : ''}>Paid</option>
+          <option value="due" ${currentStatus === 'due' ? 'selected' : ''}>Due</option>
+        </select>
+      `;
+    } else { // Amount Paid column
+      const value = cell.innerText.replace(/,/g, "").trim();
+      cell.innerHTML = `<input type="number" value="${value}" step="0.01">`;
+    }
+  }
+  // Change icon to Save button
+  icon.outerHTML = `<span class="save-icon" onclick="saveRow(this)">Save</span>`;
+}
+
+function enableEdit(icon) {
+  const row = icon.closest('tr');
+  const cells = row.querySelectorAll('td');
+
+  // Only make Amount Paid, Status, Payment Date editable
+  for (let i = 2; i <= 4; i++) {
+    const cell = cells[i];
+    
+    if (i === 4) { // Payment Date column
+      const displayDate = cell.innerText.trim();
+      let inputValue = "";
+      
+      if (displayDate) {
+        // Convert DD/MM/YYYY to YYYY-MM-DD without timezone issues
+        const parts = displayDate.split('/');
+        if (parts.length === 3) {
+          const day = parts[0].padStart(2, '0');
+          const month = parts[1].padStart(2, '0');
+          const year = parts[2];
+          inputValue = `${year}-${month}-${day}`;
+        }
+      }
+      
+      cell.innerHTML = `<input type="date" value="${inputValue}">`;
+    } else if (i === 3) { // Status column - use dropdown
+      const currentStatus = cell.innerText.trim().toLowerCase();
+      cell.innerHTML = `
+        <select>
+          <option value="paid" ${currentStatus === 'paid' ? 'selected' : ''}>Paid</option>
+          <option value="due" ${currentStatus === 'due' ? 'selected' : ''}>Due</option>
+        </select>
+      `;
+    } else { // Amount Paid column
+      const value = cell.innerText.replace(/,/g, "").trim();
+      cell.innerHTML = `<input type="number" value="${value}" step="0.01">`;
+    }
   }
 
   // Change icon to Save button
@@ -345,19 +437,16 @@ async function saveRow(icon) {
 
   const row = icon.closest('tr');
   const installmentNumber = row.getAttribute('data-installment');
-  const inputs = row.querySelectorAll('input');
-  let [amountPaid, status, paymentDate] = Array.from(inputs).map(i => i.value.trim());
+  const inputs = row.querySelectorAll('input, select');
+  
+  let amountPaid = inputs[0].value.trim(); // First input is amount
+  let status = inputs[1].value.trim();     // Second is status (select)
+  let paymentDate = inputs[2].value.trim(); // Third is date (date input)
 
   if (!amountPaid) amountPaid = '0';
 
   // If status is "due", clear payment date
   if (status.toLowerCase() === 'due') {
-    paymentDate = "";
-  } else if (paymentDate) {
-    // Validate and format date only if status is not "due"
-    const dateObj = new Date(paymentDate);
-    paymentDate = isNaN(dateObj) ? "" : dateObj.toISOString().split("T")[0];
-  } else {
     paymentDate = "";
   }
 
@@ -376,25 +465,33 @@ async function saveRow(icon) {
       body: JSON.stringify(data)
     });
 
-    await response.text();
+    const result = await response.text();
 
-    // Update row with new values
+    // Update row with new values - format date for display without timezone issues
+    let displayPaymentDate = "";
+    if (paymentDate) {
+      // Convert YYYY-MM-DD to DD/MM/YYYY without timezone interference
+      const parts = paymentDate.split('-');
+      if (parts.length === 3) {
+        displayPaymentDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+    }
+    
     row.cells[2].innerText = parseFloat(amountPaid).toLocaleString();
-    row.cells[3].innerText = status;
-    row.cells[4].innerText = paymentDate; 
-    row.cells[5].innerHTML = `<span class="edit-icon" onclick="enableEdit(this)">✎</span>`;
+    row.cells[3].innerText = status.charAt(0).toUpperCase() + status.slice(1);
+    row.cells[3].className = `status ${status.toLowerCase()}`;
+    row.cells[4].innerText = displayPaymentDate;
+    row.cells[6].innerHTML = `<span class="edit-icon" onclick="enableEdit(this)">✎</span>`;
 
     calculateTotals();
-    showCustomAlert("✅ Data updated.");
+    showCustomAlert("✅ Data updated - navigating to Dashboard");
   } catch (err) {
     console.error(err);
     icon.textContent = 'Save'; // revert if error
     icon.style.pointerEvents = 'auto';
-    showCustomAlert("✅ Data updated.");
+    showCustomAlert("✅ Data updated - navigating to Dashboard");
   }
 }
-
-///
 
 function showCustomAlert(message) {
   const customAlert = document.getElementById('myCustomAlert');
