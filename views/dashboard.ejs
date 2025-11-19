@@ -207,17 +207,24 @@
     </div>
   </div>
 </div>
-
   <h1>Admin Dashboard</h1>
+  <%
+  const totalCollection = shareholders.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
+  const totalExpected = 2250000;
+  const totalDue = totalExpected - totalCollection;
+  const currentMonthYear = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date());
+%>
   <div id="chartSummaryContainer">
     <div>
       <canvas id="paymentPie"></canvas>
     </div>
     <div class="summary">
+      <div><strong>Summary of <%= currentMonthYear %></strong></div><br>
       <div><strong>Total Collection:</strong> <%= shareholders.reduce((sum, s) => sum + (s.amount_paid || 0), 0).toLocaleString("en-US") %></div>
+      <div><strong>Total Due:</strong> <%= totalDue.toLocaleString("en-US") %></div>
       <div><strong>Total Payers:</strong> <%= shareholders.filter(s => s.amount_paid > 0).length %></div>
       <div><strong>Total Defaulters:</strong> <%= 37 - shareholders.filter(s => s.amount_paid > 0).length %></div>
-      <div><strong>Updated Date:</strong> <%= new Date().toLocaleDateString('en-GB') %></div>
+      <div><strong>Updated On:</strong> <%= new Date().toLocaleDateString('en-GB') %></div>
     </div>
   </div>
   <h1>Analytics Details</h1>

@@ -259,9 +259,7 @@ input[type="number"] {
     </div>
   </div>
 </div>
-
   <center>
-
 <div class="card-container">
   <div class="card">
     <h3>Name</h3>
@@ -271,20 +269,8 @@ input[type="number"] {
     <h3>Total Paid (BDT)</h3>
     <p id="paid"></p>
   </div>
-  <div class="card">
-    <h3>Total Installments</h3>
-    <p> 45 </p>
-    <!-- <p><%= shareholder.total_installments %></p> -->
-  </div>
-
-  <!-- <div class="card">
-    <h3>Full Amount</h3>
-    <p id="totalAmount"></p>
-  </div> -->
-
 </div>
 </div>
-
     <div class="table-wrapper">
       <table id="paymentTable">
         <thead>
@@ -307,9 +293,20 @@ input[type="number"] {
   <td><%= (shareholder.installment_amount / 50000) %></td>
 
   <td><%= payment.amount_paid.toLocaleString("en-US") %></td>
-  <td class="status <%= payment.status.toLowerCase() %>"><%= payment.status %></td>
+  <td class="status <%= payment.status.toLowerCase() %>"><%= payment.status.toLowerCase() %></td>
 
-  <td><%= payment.payment_date || "" ? new Date(payment.payment_date || "").toLocaleDateString('en-GB') : '' %></td>
+<%
+  // Split YYYY-MM-DD string
+  const dateString = payment.payment_date || "";
+  let displayDate = "";
+  if (dateString) {
+    const parts = dateString.split('-'); // [YYYY, MM, DD]
+    if (parts.length === 3) {
+      displayDate = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+    }
+  }
+%>
+<td><%= displayDate %></td>
   
   <td><%= payment.last_date || "" ? new Date(payment.last_date || "").toLocaleDateString('en-GB') : '' %></td>
   
@@ -484,12 +481,12 @@ async function saveRow(icon) {
     row.cells[6].innerHTML = `<span class="edit-icon" onclick="enableEdit(this)">✎</span>`;
 
     calculateTotals();
-    showCustomAlert("✅ Data updated - navigating to Dashboard");
+    showCustomAlert("✅ Data updated ✅");
   } catch (err) {
     console.error(err);
     icon.textContent = 'Save'; // revert if error
     icon.style.pointerEvents = 'auto';
-    showCustomAlert("✅ Data updated - navigating to Dashboard");
+    showCustomAlert("✅ Data updated ✅");
   }
 }
 
@@ -503,10 +500,9 @@ function showCustomAlert(message) {
     customAlert.style.display = 'none';
     backdrop.style.display = 'none';
     // Redirect to dashboard instead of reloading
-    window.location.href = "/dashboard";
-  }, 3000);
+    window.location.reload();
+  }, 201);
 }
-
     window.onload = calculateTotals;
   </script>
 </body>

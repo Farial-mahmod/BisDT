@@ -284,108 +284,122 @@ app.get("/profile", async (req, res) => {
 });
 
 app.post("/update-installment", ensureLogin, async (req, res) => {
-  const { shareholderId, installmentNumber, amountPaid, paymentDate, status } = req.body;
-  const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-  
-  try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection(collectionName);
+  const { shareholderId, installmentNumber, amountPaid, paymentDate, status } = req.body;
+  const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+  
+  try {
+    await client.connect();
+    const db = client.db(dbName);
+    const collection = db.collection(collectionName);
 
-    // Load the document
-    const doc = await collection.findOne({ "shareholder._id": parseInt(shareholderId) });
-    if (!doc) return res.status(404).send("❌ Shareholder not found.");
+    // Load the document and find the specific shareholder
+    const doc = await collection.findOne({ "shareholder._id": parseInt(shareholderId) });
+    if (!doc) return res.status(404).send("❌ Shareholder not found.");
 
-    // Find the specific shareholder
-    const shareholder = doc.shareholder.find(sh => sh._id === parseInt(shareholderId));
-    if (!shareholder) return res.status(404).send("❌ Shareholder not found.");
+    let shareholder = doc.shareholder.find(sh => sh._id === parseInt(shareholderId));
+    if (!shareholder) return res.status(404).send("❌ Shareholder not found.");
 
-    const installmentAmount = shareholder.installment_amount;
-    const maxAmountPerInstallment = (shareholder.installment_amount / 50000) * 50000; // Total Shares * 50000
-    
-    let excessAmount = 0;
-    let currentInstallmentPaid = parseFloat(amountPaid);
+    // Max amount is calculated based on shares (300000 / 50000) * 50000 = 300000
+    const maxAmountPerInstallment = parseFloat(shareholder.installment_amount);
+    
+    let currentInstallmentPaid = parseFloat(amountPaid);
+    let excessAmount = 0;
+    let payments = [...shareholder.payments];
+    let message = `✅ Installment ${installmentNumber} updated.`;
 
-    // Check if amount paid exceeds the maximum allowed
-    if (currentInstallmentPaid > maxAmountPerInstallment) {
-      excessAmount = currentInstallmentPaid - maxAmountPerInstallment;
-      currentInstallmentPaid = maxAmountPerInstallment;
-    }
+    // --- 1. Update the current installment ---
+    payments = payments.map(payment => {
+      if (payment.installment_number === parseInt(installmentNumber)) {
+        
+        // Determine actual paid and excess
+        let finalPaid = currentInstallmentPaid;
+        if (currentInstallmentPaid > maxAmountPerInstallment) {
+          excessAmount = currentInstallmentPaid - maxAmountPerInstallment;
+          finalPaid = maxAmountPerInstallment;
+        } else {
+          excessAmount = 0;
+        }
 
-    // Update the specific shareholder's payments
-    const updated = doc.shareholder.map(shareholder => {
-      if (shareholder._id === parseInt(shareholderId)) {
-        let payments = [...shareholder.payments]; // Create a copy
-        
-        // Update current installment
-        payments = payments.map(payment => {
-          if (payment.installment_number === parseInt(installmentNumber)) {
-            // Handle payment date based on status
-            let finalPaymentDate = "";
-            
-            if (status.toLowerCase() === "paid" && paymentDate) {
-              finalPaymentDate = paymentDate;
-            }
+        // Set payment date only if status is paid
+        let finalPaymentDate = (status.toLowerCase() === "paid" && paymentDate) ? paymentDate : "";
 
-            return {
-              ...payment,
-              amount_paid: currentInstallmentPaid,
-              status: status,
-              payment_date: finalPaymentDate
-            };
-          }
-          return payment;
-        });
+        return {
+          ...payment,
+          amount_paid: finalPaid,
+          status: status,
+          payment_date: finalPaymentDate
+        };
+      }
+      return payment;
+    });
+    
+    // --- 2. Recursively distribute excess to future installments ---
+    if (excessAmount > 0) {
+      let remainingExcess = excessAmount;
+      let currentIdx = payments.findIndex(p => p.installment_number === parseInt(installmentNumber));
+      let installmentsCovered = 0;
 
-        // If there's excess amount, apply it to the next installment
-        if (excessAmount > 0) {
-          const nextInstallmentNumber = parseInt(installmentNumber) + 1;
-          const nextInstallment = payments.find(p => p.installment_number === nextInstallmentNumber);
-          
-          if (nextInstallment) {
-            payments = payments.map(payment => {
-              if (payment.installment_number === nextInstallmentNumber) {
-                const newAmount = payment.amount_paid + excessAmount;
-                
-                // If the next installment also exceeds max, we'll handle it recursively in future updates
-                return {
-                  ...payment,
-                  amount_paid: newAmount,
-                  status: status, // Same status as current installment
-                  payment_date: paymentDate // Same date as current installment
-                };
-              }
-              return payment;
-            });
-          }
-        }
-        
-        return { ...shareholder, payments };
-      }
-      return shareholder;
-    });
+      // Start loop from the *next* installment (currentIdx + 1)
+      for (let i = currentIdx + 1; i < payments.length && remainingExcess > 0; i++) {
+        const installment = payments[i];
+        
+        // How much more is needed to fully pay this installment
+        const needed = maxAmountPerInstallment - installment.amount_paid;
+        
+        if (needed > 0) {
+          const amountToApply = Math.min(remainingExcess, needed);
 
-    const result = await collection.replaceOne(
-      { _id: doc._id },
-      { ...doc, shareholder: updated }
-    );
+          payments[i] = {
+            ...installment,
+            amount_paid: installment.amount_paid + amountToApply,
+            status: 'Paid', // Mark as Paid if amount_paid reaches maxAmountPerInstallment
+            payment_date: paymentDate // Use the same payment date
+          };
+          
+          // Update status again if it's now fully paid
+          if (payments[i].amount_paid >= maxAmountPerInstallment) {
+            payments[i].status = 'Paid';
+            installmentsCovered++;
+          } else {
+            // If not fully paid, keep status as 'Due' (or partial paid, but 'Due' seems standard here)
+            payments[i].status = 'Due';
+          }
+          
+          remainingExcess -= amountToApply;
+        }
+      }
+            
+      message += ` Excess amount of ${excessAmount.toLocaleString()} BDT covered ${installmentsCovered} future installment(s).`;
+      if (remainingExcess > 0) {
+        message += ` Remaining excess ${remainingExcess.toLocaleString()} BDT not applied.`;
+      }
+    }
 
-    if (result.modifiedCount > 0) {
-      let message = `✅ Installment ${installmentNumber} updated.`;
-      if (excessAmount > 0) {
-        message += ` Excess amount of ${excessAmount.toLocaleString()} BDT applied to next installment.`;
-      }
-      res.send(message);
-    } else {
-      res.status(400).send("⚠️ No changes made.");
-    }
+    // Update the shareholder object within the main document
+    const updatedDocShareholders = doc.shareholder.map(sh => {
+      if (sh._id === parseInt(shareholderId)) {
+        return { ...sh, payments };
+      }
+      return sh;
+    });
 
-  } catch (err) {
-    console.error("Update error:", err);
-    res.status(500).send("⚠️ Error updating installment.");
-  } finally {
-    await client.close();
-  }
+    const result = await collection.replaceOne(
+      { _id: doc._id },
+      { ...doc, shareholder: updatedDocShareholders }
+    );
+
+    if (result.modifiedCount > 0) {
+      res.send(message);
+    } else {
+      res.status(400).send("⚠️ No changes made.");
+    }
+
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).send("⚠️ Error updating installment.");
+  } finally {
+    await client.close();
+  }
 });
 
 app.get("/logout", (req, res) => {
