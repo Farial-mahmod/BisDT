@@ -505,6 +505,25 @@ function showCustomAlert(message) {
   }, 201);
 }
     window.onload = calculateTotals;
+
+
+    ///
+  // Handle browser back button to redirect to dashboard
+window.addEventListener('popstate', function(event) {
+  // Redirect to dashboard when back button is pressed
+  window.location.href = '/dashboard';
+});
+
+// Replace current history state to prevent going back to previous page
+history.replaceState(null, null, window.location.href);
+history.pushState(null, null, window.location.href);
+
+// Optional: Also add a beforeunload event to handle page refresh/closing
+window.addEventListener('beforeunload', function() {
+  // This ensures that if user refreshes, they stay on the same page
+  history.replaceState(null, null, window.location.href);
+});
+
   </script>
 </body>
 </html>
