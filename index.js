@@ -477,6 +477,50 @@ app.post("/update-installment", ensureLogin, async (req, res) => {
   }
 });
 
+
+app.get("/profile", async (req, res) => {
+  // 1️⃣ Check if user logged in
+  if (!req.session.user) {
+    return res.redirect("/login");
+  }
+
+  const userId = req.session.user.id;
+  const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+  try {
+    await client.connect();
+    const db = client.db("bismillah");
+    const collection = db.collection("shareholders"); // adjust to your actual collection
+
+    // 2️⃣ If admin (ID = 1), redirect to dashboard
+    if (userId === 1) {
+      return res.redirect("/dashboard");
+    }
+
+    // 3️⃣ For everyone else → load only that user’s shareholder data
+    const doc = await collection.findOne({ "shareholder._id": userId });
+
+    if (!doc || !doc.shareholder) {
+      return res.status(404).send("❌ Shareholder data not found.");
+    }
+
+    const shareholder = doc.shareholder.find(s => s._id === userId);
+
+    if (!shareholder) {
+      return res.status(404).send("❌ Shareholder not found.");
+    }
+
+    // 4️⃣ Render the profile page
+    return res.render("profile", { shareholder });
+  } catch (err) {
+    console.error("Error loading profile:", err);
+    res.status(500).send("⚠️ Server error while loading profile.");
+  } finally {
+    await client.close();
+  }
+});
+
+
 app.get("/logout", (req, res) => {
   req.session.destroy(err => {
     if (err) return res.send("Error logging out");

@@ -293,7 +293,7 @@
       <%= totalShares %>
     </td>
     <td><%= payment.amount_paid %></td>
-    <td><%= payment.status %></td>
+    <td><%= payment.status.replace(/^./, char => char.toUpperCase()); %></td>
     <td><%= payment.payment_date || "-" %></td>
     <td>
       <%= payment.last_date ? payment.last_date.split('-').reverse().join('-') : '-' %>

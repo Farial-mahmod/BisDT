@@ -20,6 +20,21 @@
       padding-top: 21px; /* Space to clear the fixed navbar */
     }
 
+    .custom-alert {
+  position: fixed;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #ff4c4c;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 500;
+  z-index: 501;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
     .content-wrapper {
       display: flex;
       flex-direction: column;
@@ -319,7 +334,7 @@
           window.location.href = '/profile';
         }
       } else {
-        alert('Login failed: ' + data.message);
+        showCustomAlert('Login failed: ' + data.message);
 
         // Restore button
         loginBtn.disabled = false;
@@ -328,13 +343,30 @@
     })
     .catch(err => {
       console.error(err);
-      alert("Please try again.");
+      showCustomAlert("Please try again.");
 
       // Restore button
       loginBtn.disabled = false;
       loginBtn.textContent = "Login";
     });
   });
+
+  function showCustomAlert(message) {
+  const alert = document.createElement('div');
+  alert.className = 'custom-alert';
+  alert.textContent = message;
+  document.body.appendChild(alert);
+  
+  // Fade in
+  setTimeout(() => alert.style.opacity = '1', 10);
+  
+  // Remove after 5 seconds
+  setTimeout(() => {
+    alert.style.opacity = '0';
+    setTimeout(() => alert.remove(), 300);
+  }, 5001);
+}
+
 </script>
 
 </body>
