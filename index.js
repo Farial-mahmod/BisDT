@@ -241,43 +241,118 @@ dashboardData.push({
   }
 });
 
-app.get("/profile", async (req, res) => {
-  // 1️⃣ Check if user logged in
-  if (!req.session.user) {
-    return res.redirect("/login");
-  }
-
-  const userId = req.session.user.id;
+app.get("/filter", ensureLogin, async (req, res) => {
   const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-
+  
   try {
     await client.connect();
-    const db = client.db("bismillah");
-    const collection = db.collection("shareholders"); // adjust to your actual collection
+    const collection = client.db(dbName).collection(collectionName);
 
-    // 2️⃣ If admin (ID = 1), redirect to dashboard
-    if (userId === 1) {
-      return res.redirect("/dashboard");
-    }
+    // Fetch all documents
+    const docs = await collection.find({}).toArray();
+    const dashboardData = [];
 
-    // 3️⃣ For everyone else → load only that user’s shareholder data
-    const doc = await collection.findOne({ "shareholder._id": userId });
+    docs.forEach((doc) => {
+      if (Array.isArray(doc.shareholder)) {
+        doc.shareholder.forEach((s) => {
+          const firstInstallment = s.payments?.find(p => p.installment_number === 1) || {};
 
-    if (!doc || !doc.shareholder) {
-      return res.status(404).send("❌ Shareholder data not found.");
-    }
+          dashboardData.push({
+            doc_id: doc._id.toString(),
+            id: s.id || s.name,
+            name: s.name || "-",
+            installment_number: firstInstallment.installment_number || "-",
+            amount_paid: firstInstallment.amount_paid || 0,
+            status: firstInstallment.status || "-",
+            payment_date: firstInstallment.payment_date || "-",
+            due_date: firstInstallment.last_date || "-"
+          });
+        });
+      }
+    });
 
-    const shareholder = doc.shareholder.find(s => s._id === userId);
-
-    if (!shareholder) {
-      return res.status(404).send("❌ Shareholder not found.");
-    }
-
-    // 4️⃣ Render the profile page
-    return res.render("profile", { shareholder });
+    // Pass data directly to the filter page
+    res.render("filter", { shareholders: dashboardData });
+    
   } catch (err) {
-    console.error("Error loading profile:", err);
-    res.status(500).send("⚠️ Server error while loading profile.");
+    console.error("Error fetching filter data:", err);
+    res.status(500).send("Error loading filter page");
+  } finally {
+    await client.close();
+  }
+});
+
+// API endpoint - separate route
+app.get('/api/shareholders-filter', ensureLogin, async (req, res) => {
+  const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+  
+  try {
+    await client.connect();
+    const collection = client.db(dbName).collection(collectionName);
+
+    const docs = await collection.find({}).toArray();
+    const dashboardData = [];
+
+    docs.forEach((doc) => {
+      if (Array.isArray(doc.shareholder)) {
+        doc.shareholder.forEach((s) => {
+          const firstInstallment = s.payments?.find(p => p.installment_number === 1) || {};
+
+          dashboardData.push({
+            doc_id: doc._id.toString(),
+            id: s.id || s.name,
+            name: s.name || "-",
+            installment_number: firstInstallment.installment_number || "-",
+            amount_paid: firstInstallment.amount_paid || 0,
+            status: firstInstallment.status || "-",
+            payment_date: firstInstallment.payment_date || "-",
+            due_date: firstInstallment.last_date || "-"
+          });
+        });
+      }
+    });
+
+    res.json(dashboardData);
+    
+  } catch (error) {
+    console.error('Error fetching shareholders:', error);
+    res.status(500).json({ error: 'Failed to fetch data' });
+  } finally {
+    await client.close();
+  }
+});
+
+// API endpoint if you still need it for other purposes
+app.get('/api/shareholders', ensureLogin, async (req, res) => {
+  const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+  try {
+    await client.connect();
+    const collection = client.db(dbName).collection(collectionName);
+    const docs = await collection.find({}).toArray();
+    const dashboardData = [];
+    docs.forEach((doc) => {
+      if (Array.isArray(doc.shareholder)) {
+        doc.shareholder.forEach((s) => {
+          const firstInstallment = s.payments?.find(p => p.installment_number === 1) || {};
+
+          dashboardData.push({
+            doc_id: doc._id.toString(),
+            id: s.id || s.name,
+            name: s.name || "-",
+            installment_number: firstInstallment.installment_number || "-",
+            amount_paid: firstInstallment.amount_paid || 0,
+            status: firstInstallment.status || "-",
+            payment_date: firstInstallment.payment_date || "-",
+            due_date: firstInstallment.last_date || "-"
+          });
+        });
+      }
+    });
+
+    res.json(dashboardData);
+  } catch (error) {
+    console.error('Error fetching shareholders:', error);
+    res.status(500).json({ error: 'Failed to fetch data' });
   } finally {
     await client.close();
   }

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Payment Filter - Bismillah Developer And Traders</title>
+  <link rel="icon" href="https://drive.google.com/thumbnail?id=12-BANR1o6vLWay0ocn7TPkVTDVwYmoEQ&sz=w301-501" type="image/jpg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, CornSilk, AliceBlue, HoneyDew);
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin: 20px 0;
+      font-size: 1.8em;
+    }
+
+    .top-menu {
+      width: 100%;
+      background: black;
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-wrap: wrap;
+    }
+
+    .top-menu h1 { margin: 0; font-size: 1.5em; }
+    .top-menu a {
+      color: white;
+      margin-left: 20px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1em;
+    }
+    .top-menu a:hover { color: #FFD700; }
+
+    .filter-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px auto;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .filter-controls select, .filter-controls button {
+      padding: 10px 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+    }
+
+    .filter-controls button {
+      background: #007bff;
+      color: white;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.3s;
+    }
+
+    .filter-controls button:hover {
+      background: #0056b3;
+    }
+
+    /* ===== Table ===== */
+    .table-container {
+      overflow-x: auto;
+      width: 95%;
+      margin: 20px auto;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    th { background-color: #f2f2f2; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+
+    .status-paid { color: green; font-weight: bold; }
+    .status-pending { color: orange; font-weight: bold; }
+    .status-overdue { color: red; font-weight: bold; }
+
+    /* ===== Responsive Rules ===== */
+    @media (max-width: 768px) {
+      h1 { font-size: 1.4em; }
+
+      .top-menu {
+        flex-direction: column;
+        text-align: center;
+        padding: 10px;
+      }
+
+      .top-menu a {
+        display: inline-block;
+        margin: 5px 10px;
+        font-size: 0.95em;
+      }
+
+      .filter-controls {
+        flex-direction: column;
+        width: 95%;
+      }
+
+      table { font-size: 13px; }
+      th, td { padding: 8px; }
+    }
+
+    @media (max-width: 480px) {
+      .top-menu a { font-size: 0.9em; }
+      h1 { font-size: 1.2em; }
+    }
+
+    /* Dropdown Menu */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-btn {
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1.1em;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: black;
+      min-width: 150px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      padding: 10px 0;
+      z-index: 200;
+    }
+
+    .dropdown-content a {
+      color: white;
+      padding: 10px 20px;
+      display: block;
+      text-decoration: none;
+    }
+
+    .dropdown-content a:hover {
+      background: #333;
+      color: #FFD700;
+    }
+
+    .dropdown:hover .dropdown-content {
+      display: block;
+    }
+
+.total-due-row {
+  background-color: #e8f4fd !important;
+  border-top: 2px solid #007bff;
+}
+
+.total-due-row td {
+  border: none !important;
+  padding: 15px 10px !important;
+}
+
+  </style>
+</head>
+<body>
+
+<div class="top-menu">
+  <div class="dropdown">
+    <span class="dropdown-btn">Category</span>
+    <div class="dropdown-content">
+      <a href="/">Home</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/inventory">Goods</a>
+      <a href="/purchase">Purchases</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </div>
+</div>
+
+<h1>Report Filter</h1>
+
+<div class="filter-controls"> Select Status:
+  <select id="statusFilter">
+    <option value="all">All</option>
+    <option value="paid">Paid</option>
+    <option value="due">Due</option>
+  </select>
+  <button id="downloadPdf" title="Download Receipt as PDF">
+    <span>📄</span> Download PDF
+  </button>
+</div>
+
+<div class="table-container">
+  <table id="paymentTable">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Installment No.</th>
+        <th>Total Shares</th>  
+        <th>Paid Amount</th>
+        <th>Payment Status</th>
+        <th>Payment Date</th>
+        <th>Due Date</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% 
+      const shareMap = {
+        1: 5,
+        2: 3,
+        9: 2,
+        12: 2
+      };
+      
+      // Calculate total due count
+      let totalDueCount = 0;
+      let totalPaid = 0;
+      shareholders.forEach((s) => {
+        if (s.status !== 'paid') {
+          totalDueCount++;
+        }
+      });
+      totalPaid = 37 - totalDueCount;
+      %>
+      
+      <% if (shareholders.length === 0) { %>
+        <tr><td colspan="8">No shareholders found</td></tr>
+      <% } else { %>
+        <% shareholders.forEach((s, index) => { %>
+          <tr data-status="<%= s.status %>" data-is-paid="<%= s.status === 'paid' ? 'true' : 'false' %>">
+            <td><%= index + 1 %></td>
+            <td><%= s.name %></td>
+            <td><%= s.installment_number %></td>
+            <td><%= shareMap[index + 1] || 1 %></td>
+            <td><%= Number(s.amount_paid).toLocaleString("en-US") %></td>
+            <td class="<%= s.status === 'paid' ? 'status-paid' : s.status === 'Pending' ? 'status-pending' : 'status-overdue' %>">
+              <%= s.status.replace(/^./, char => char.toUpperCase()); %>
+            </td>
+            <td>
+              <% 
+                if (s.payment_date && s.payment_date !== '-') {
+                  const date = new Date(s.payment_date + 'T00:00:00');
+                  if (!isNaN(date.getTime())) {
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = String(date.getFullYear());
+              %>
+                <%= `${day}-${month}-${year}` %>
+              <%   } else { %>
+                &nbsp;
+              <%   } %>
+              <% } else { %>
+                &nbsp;
+              <% } %>
+            </td>
+            <td><%= s.due_date && s.due_date !== '-' ? new Date(s.due_date).toLocaleDateString('en-GB').split('/').join('-') : '' %></td>
+          </tr>
+        <% }) %>
+
+        <tr class="total-due-row">
+          <td colspan="6"></td>
+          <td colspan="2" style="text-align: right; padding-right: 20px;">
+            <div style="font-weight: bold; font-size: 14px;">
+              <div style="color: green;">Total Paid: <%= totalPaid %></div>
+              <div style="color: rgb(245, 12, 12);">Total Due: <%= totalDueCount %></div>
+            </div>
+          </td>
+        </tr>
+
+      <% } %>
+    </tbody>
+
+  </table>
+</div>
+
+<script>
+  // Enhanced Filter functionality
+  // Enhanced Filter functionality
+  document.getElementById('statusFilter').addEventListener('change', function() {
+    const status = this.value;
+    const rows = document.querySelectorAll('#paymentTable tbody tr');
+    rows.forEach(row => {
+      // Skip the total due row (it has a special class)
+      if (row.classList.contains('total-due-row')) {
+        return;
+      }
+      const rowStatus = row.getAttribute('data-status');
+      const isPaid = row.getAttribute('data-is-paid') === 'true';
+      
+      if (status === 'all') {
+        row.style.display = '';
+      } else if (status === 'paid') {
+        // Show only paid rows
+        row.style.display = isPaid ? '' : 'none';
+      } else if (status === 'due') {
+        // Show all non-paid rows (Pending, overdue, etc.)
+        row.style.display = !isPaid ? '' : 'none';
+      }
+    });
+  });
+
+// PDF download functionality - USING html2canvas as alternative
+// PDF download functionality - USING html2canvas as alternative
+document.getElementById('downloadPdf').addEventListener('click', function() {
+  // Load html2canvas if not already loaded
+  if (typeof html2canvas === 'undefined') {
+    // Dynamically load html2canvas
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    script.onload = function() {
+      generatePDFWithCanvas();
+    };
+    script.onerror = function() {
+      alert('Failed to load PDF library. Please try again.');
+    };
+    document.head.appendChild(script);
+  } else {
+    generatePDFWithCanvas();
+  }
+  
+  function generatePDFWithCanvas() {
+    try {
+      const { jsPDF } = jspdf;
+      const table = document.getElementById('paymentTable');
+      
+      // Create a temporary container for better PDF formatting
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '800px'; // Wider for better visibility
+      tempContainer.style.backgroundColor = 'white';
+      tempContainer.style.padding = '20px';
+      tempContainer.style.fontSize = '12px';
+      
+      // Add company header
+      const header = document.createElement('div');
+      header.style.textAlign = 'center';
+      header.style.marginBottom = '20px';
+      header.style.borderBottom = '2px solid #333';
+      header.style.paddingBottom = '10px';
+      
+      const companyName = document.createElement('h1');
+      companyName.textContent = 'Bismillah Developer And Traders';
+      companyName.style.margin = '0';
+      companyName.style.fontSize = '18px';
+      companyName.style.color = '#333';
+      
+      const currentDate = document.createElement('p');
+      const now = new Date();
+      const dateStr = `${now.getDate()}-${now.getMonth()+1}-${now.getFullYear()}`;
+      currentDate.textContent = `Date: ${dateStr}`;
+      currentDate.style.margin = '5px 0 0 0';
+      currentDate.style.fontSize = '14px';
+      currentDate.style.color = '#666';
+      
+      // Add filter info
+      const filterInfo = document.createElement('p');
+      const filterValue = document.getElementById('statusFilter').value;
+      filterInfo.textContent = `Filter: ${filterValue === 'all' ? 'All' : filterValue === 'paid' ? 'Paid' : 'Due'}`;
+      filterInfo.style.margin = '5px 0 0 0';
+      filterInfo.style.fontSize = '12px';
+      filterInfo.style.color = '#007bff';
+      filterInfo.style.fontWeight = 'bold';
+      
+      header.appendChild(companyName);
+      header.appendChild(currentDate);
+      header.appendChild(filterInfo);
+      
+      // Clone and style the table for better PDF appearance
+      const tableClone = table.cloneNode(true);
+      tableClone.style.width = '100%';
+      tableClone.style.fontSize = '10px';
+      tableClone.style.borderCollapse = 'collapse';
+      
+      // Style table headers for better visibility
+      const thElements = tableClone.querySelectorAll('th');
+      thElements.forEach(th => {
+        th.style.backgroundColor = '#f2f2f2';
+        th.style.padding = '8px';
+        th.style.border = '1px solid #ccc';
+        th.style.fontWeight = 'bold';
+      });
+      
+      // Style table cells for better visibility
+      const tdElements = tableClone.querySelectorAll('td');
+      tdElements.forEach(td => {
+        td.style.padding = '6px';
+        td.style.border = '1px solid #ccc';
+      });
+      
+      // Build the temporary container
+      tempContainer.appendChild(header);
+      tempContainer.appendChild(tableClone);
+      document.body.appendChild(tempContainer);
+      
+      html2canvas(tempContainer, {
+        scale: 2, // Higher scale for better quality
+        useCORS: true,
+        logging: false,
+        width: tempContainer.offsetWidth,
+        height: tempContainer.offsetHeight
+      }).then(canvas => {
+        // Remove temporary container
+        document.body.removeChild(tempContainer);
+        
+        const imgData = canvas.toDataURL('image/png');
+        const doc = new jsPDF('p', 'mm', 'a4');
+        
+        // Calculate dimensions for better fit
+        const pdfWidth = doc.internal.pageSize.getWidth();
+        const pdfHeight = doc.internal.pageSize.getHeight();
+        const imgWidth = pdfWidth - 20; // 10mm margins on each side
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        let position = 10;
+        
+        // Add image to PDF
+        doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        
+        // Handle multiple pages if needed
+        let heightLeft = imgHeight;
+        let currentPage = 1;
+        
+        while (heightLeft >= pdfHeight - 20) {
+          position = heightLeft - imgHeight + 10;
+          doc.addPage();
+          doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+          heightLeft -= pdfHeight - 20;
+          currentPage++;
+        }
+        
+        // Save the PDF with descriptive name
+        const fileName = `Bismillah_Payment_Report_${dateStr}.pdf`;
+        doc.save(fileName);
+      }).catch(error => {
+        console.error('Canvas error:', error);
+        alert('Error generating PDF image. Please try again.');
+        // Clean up temporary container in case of error
+        if (document.body.contains(tempContainer)) {
+          document.body.removeChild(tempContainer);
+        }
+      });
+      
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      alert('Error generating PDF: ' + error.message);
+    }
+  }
+});
+</script>
+</body>
+</html>

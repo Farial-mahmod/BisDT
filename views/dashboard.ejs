@@ -198,9 +198,10 @@
 
 <div class="top-menu">
   <div class="dropdown">
-    <span class="dropdown-btn">Category ▾</span>
+    <span class="dropdown-btn">Category</span>
     <div class="dropdown-content">
       <a href="/">Home</a>
+      <a href="/filter">Report</a>
       <a href="/inventory">Goods</a>
       <a href="/purchase">Purchases</a>
       <a href="/logout">Logout</a>
@@ -227,7 +228,7 @@
       <div><strong>Updated On:</strong> <%= new Date().toLocaleDateString('en-GB') %></div>
     </div>
   </div>
-  <h1>Analytics Details</h1>
+  <h1>Payment Details</h1>
   <div class="table-container">
     <table>
       <thead>
@@ -285,7 +286,7 @@
   <% } %>
 </td>
         <td><%= s.due_date ? new Date(s.due_date).toLocaleDateString('en-GB').split('/').join('-') : '' %></td>
-        <td><span class="report-icon" onclick="viewReport(this)">🧾</span></td>
+        <td><span class="report-icon" onclick="viewReport(this)">📝</span></td>
       </tr>
     <% }) %>
   <% } %>
@@ -306,7 +307,7 @@ function viewReport(iconElement) {
   }
 
   // Change icon to Loading...
-  iconElement.textContent = 'Loading…';
+  iconElement.textContent = 'Loading';
   iconElement.style.pointerEvents = 'none'; // prevent multiple clicks
 
   // Small delay to show the loading text before redirect
