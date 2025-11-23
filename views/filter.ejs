@@ -5,9 +5,7 @@
   <title>Payment Filter - Bismillah Developer And Traders</title>
   <link rel="icon" href="https://drive.google.com/thumbnail?id=12-BANR1o6vLWay0ocn7TPkVTDVwYmoEQ&sz=w301-501" type="image/jpg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
@@ -179,7 +177,6 @@
     .dropdown:hover .dropdown-content {
       display: block;
     }
-
 .total-due-row {
   background-color: #e8f4fd !important;
   border-top: 2px solid #007bff;
@@ -188,6 +185,7 @@
 .total-due-row td {
   border: none !important;
   padding: 15px 10px !important;
+  text-align: left !important;
 }
 
   </style>
@@ -236,7 +234,7 @@
     </thead>
 
     <tbody>
-      <% 
+            <% 
       const shareMap = {
         1: 5,
         2: 3,
@@ -244,15 +242,17 @@
         12: 2
       };
       
-      // Calculate total due count
+      // Calculate total due count and total paid amount
       let totalDueCount = 0;
-      let totalPaid = 0;
+      let totalPaidAmount = 0;
       shareholders.forEach((s) => {
         if (s.status !== 'paid') {
           totalDueCount++;
         }
+        totalPaidAmount += Number(s.amount_paid) || 0;
       });
-      totalPaid = 37 - totalDueCount;
+      let totalPaid = 37 - totalDueCount;
+      const totalDueAmount = 2250000 - totalPaidAmount;
       %>
       
       <% if (shareholders.length === 0) { %>
@@ -293,8 +293,8 @@
           <td colspan="6"></td>
           <td colspan="2" style="text-align: right; padding-right: 20px;">
             <div style="font-weight: bold; font-size: 14px;">
-              <div style="color: green;">Total Paid: <%= totalPaid %></div>
-              <div style="color: rgb(245, 12, 12);">Total Due: <%= totalDueCount %></div>
+              <div style="color: green;">Total Collection: ৳<%= totalPaidAmount.toLocaleString("en-US") %> <br>Paid By: <%= totalPaid %> Shareholders </div>
+              <div style="color: rgb(245, 12, 12);">Due Amount: ৳<%= totalDueAmount.toLocaleString("en-US") %> <br>Total Defaulters: <%= totalDueCount %> Shareholders </div>
             </div>
           </td>
         </tr>
@@ -444,16 +444,13 @@ document.getElementById('downloadPdf').addEventListener('click', function() {
         const pdfHeight = doc.internal.pageSize.getHeight();
         const imgWidth = pdfWidth - 20; // 10mm margins on each side
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
         let position = 10;
-        
         // Add image to PDF
         doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
         
         // Handle multiple pages if needed
         let heightLeft = imgHeight;
         let currentPage = 1;
-        
         while (heightLeft >= pdfHeight - 20) {
           position = heightLeft - imgHeight + 10;
           doc.addPage();

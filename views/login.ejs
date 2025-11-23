@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bismillah Developer And Traders</title>
-      <link rel="icon" href="https://drive.google.com/thumbnail?id=12-BANR1o6vLWay0ocn7TPkVTDVwYmoEQ&sz=w301-501" type="image/jpg">
+      <link rel="icon" href="https://drive.google.com/thumbnail?id=1m2-BANR1o6vLWay0ocn7TPkVTDVwYmoEQ&sz=w301-501" type="image/jpg">
   
   <style>
     body {
@@ -260,9 +260,11 @@
       <!-- <h4>Login</h4> -->
        <br>
       <form id="loginForm" novalidate>
+          
         <div class="form-group">
           <label for="mobile">Mobile Number</label>
-          <input type="text" id="mobile" name="mobile" placeholder="01XXXXXXXXX" maxlength="11" required>
+          <!-- Change maxlength from 11 to 14 to accommodate + and 13 digits -->
+          <input type="text" id="mobile" name="mobile" placeholder="01XXXXXXXXX or +XXXXXXXXXXXXX" maxlength="14" required>
           <div class="error" id="mobileError">Please enter your registered mobile number.</div>
         </div>
 
@@ -293,7 +295,7 @@
     mobileError.style.display = 'none';
     passwordError.style.display = 'none';
 
-    const mobilePattern = /^01\d{9}$/;
+    const mobilePattern = /^(01\d{9}|\+\d{1,13})$/;
 
     if (!mobilePattern.test(mobileInput.value.trim())) {
       mobileError.style.display = 'block';
