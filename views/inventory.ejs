@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Purchase Entry</title>
+  <title>Goods</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     .required::after { content: " *"; color: #d33; }
@@ -200,7 +200,6 @@
 <body>
 
 <header class="navbar">
-
 <div class="top-menu">
   <div class="dropdown">
     <span class="dropdown-btn">Category ▾</span>
@@ -218,7 +217,6 @@
     <div class="logo">
       <img src="https://drive.google.com/thumbnail?id=12-BANR1o6vLWay0ocn7TPkVTDVwYmoEQ&sz=w1101-1101" alt="Bismillah Developer & Traders" />
     </div>
-
   </header>
 
   <div class="container">
@@ -234,16 +232,22 @@
       </div>
 
       <div class="form-group">
-        <label for="productName" class="form-label required">Product Name</label>
+        <label for="productName" class="form-label required"> Expenditure </label>
         <select id="productName" name="productName" class="form-select" required>
           <option value="">Choose...</option>
-          <% const products = ["Cement", "Sand", "Stone", "Brick", "Rod", "Construction Equipment"]; %>
+          <% const products = ["Brick", "Cement", "Construction Equipment", "Government Fee", "Rod", "Sand", "Stone", "Salary of Guard", "Salary of Labourers", "Salary of Site Engineer" ]; %>
           <% products.forEach(function(item) { %>
             <option value="<%= item %>" <%= typeof formData !== 'undefined' && formData.productName === item ? 'selected' : '' %>><%= item %></option>
           <% }) %>
         </select>
-        <div class="invalid-feedback">Please select a product.</div>
+        <div class="invalid-feedback">Please select an option.</div>
       </div>
+      
+      <!-- Notes -->
+<div class="form-group">
+  <label for="note" class="form-label">Notes</label>
+  <textarea id="note" name="note" class="form-control" rows="2" placeholder="Add notes here"><%= typeof formData !== 'undefined' && formData.note ? formData.note : '' %></textarea>
+</div>
 
       <div class="form-group">
         <label for="amount" class="form-label required">Product Amount</label>
@@ -290,14 +294,8 @@
         <div class="invalid-feedback">Please enter supplier name.</div>
       </div>
 
-<!-- Notes -->
-<div class="form-group">
-  <label for="note" class="form-label">Notes</label>
-  <textarea id="note" name="note" class="form-control" rows="2" placeholder="Optional notes..."><%= typeof formData !== 'undefined' && formData.note ? formData.note : '' %></textarea>
-</div>
-
       <div class="mt-3 text-center">
-        <button type="submit" class="btn btn-primary">Save Purchase</button>
+        <button type="submit" class="btn btn-primary">Save Data</button>
         <a href="/purchases/new" class="btn btn-outline-secondary ms-2">Reset</a>
       </div>
     </form>
