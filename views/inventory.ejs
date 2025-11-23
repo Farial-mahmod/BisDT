@@ -235,7 +235,7 @@
         <label for="productName" class="form-label required"> Expenditure </label>
         <select id="productName" name="productName" class="form-select" required>
           <option value="">Choose...</option>
-          <% const products = ["Brick", "Cement", "Construction Equipment", "Government Fee", "Rod", "Sand", "Stone", "Salary of Guard", "Salary of Labourers", "Salary of Site Engineer" ]; %>
+          <% const products = ["Brick", "Cement", "Commission (7%)", "Construction Equipment", "Government Fee", "Rod", "Sand", "Stone", "Salary of Guard", "Salary of Labourers", "Salary of Site Engineer" ]; %>
           <% products.forEach(function(item) { %>
             <option value="<%= item %>" <%= typeof formData !== 'undefined' && formData.productName === item ? 'selected' : '' %>><%= item %></option>
           <% }) %>
